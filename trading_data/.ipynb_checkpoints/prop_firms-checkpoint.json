@@ -1,0 +1,51 @@
+[
+  {
+    "name": "TakeProfitTrader",
+    "account_types": [
+      "25K",
+      "50K",
+      "100K"
+    ],
+    "max_daily_loss": {
+      "25K": 1250,
+      "50K": 2500,
+      "100K": 5000
+    },
+    "max_total_loss": {
+      "25K": 2000,
+      "50K": 4000,
+      "100K": 8000
+    },
+    "profit_target": {
+      "25K": 1500,
+      "50K": 3000,
+      "100K": 6000
+    },
+    "payout_percentage": 80,
+    "min_trading_days": 5,
+    "special_features": [
+      "Daily Payouts"
+    ]
+  },
+  {
+    "name": "APEX",
+    "account_types": [
+      "300K"
+    ],
+    "max_daily_loss": {
+      "300K": 9000
+    },
+    "max_total_loss": {
+      "300K": 15000
+    },
+    "profit_target": {
+      "300K": 15000
+    },
+    "payout_percentage": 90,
+    "min_trading_days": 10,
+    "special_features": [
+      "High Payout %",
+      "Promo Discounts"
+    ]
+  }
+]

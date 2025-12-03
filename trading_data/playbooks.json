@@ -1,0 +1,36 @@
+[
+  {
+    "name": "930",
+    "description": "Breakout of the opening one minute",
+    "rules": [
+      "930 candle prints",
+      "we get a close below or above the 930 candle on m1",
+      "trade in the direction of the breakout for 0.1 to 0.5%"
+    ],
+    "max_position_size": {
+      "first_trade": 100,
+      "second_trade": 100,
+      "third_trade": 1
+    },
+    "max_daily_loss": 200,
+    "created_at": "2025-09-22T18:16:11.637502",
+    "updated_at": "2025-12-02T15:37:59.243666"
+  },
+  {
+    "name": "Bread'n'Butter",
+    "description": "",
+    "rules": [
+      "Liquidity sweep",
+      "Back inside the range",
+      "Csd"
+    ],
+    "max_position_size": {
+      "first_trade": 100,
+      "second_trade": 50,
+      "third_trade": 50
+    },
+    "max_daily_loss": 200,
+    "created_at": "2025-12-02T21:49:15.686510",
+    "updated_at": "2025-12-02T21:59:53.809476"
+  }
+]

@@ -1,0 +1,111 @@
+[
+  {
+    "name": "TakeProfitTrader",
+    "account_types": [
+      "25K",
+      "50K",
+      "100K"
+    ],
+    "max_daily_loss": {
+      "25K": 1250,
+      "50K": 2500,
+      "100K": 5000
+    },
+    "max_total_loss": {
+      "25K": 2000,
+      "50K": 4000,
+      "100K": 8000
+    },
+    "profit_target": {
+      "25K": 1500,
+      "50K": 3000,
+      "100K": 6000
+    },
+    "payout_percentage": 80,
+    "min_trading_days": 1,
+    "special_features": [
+      "Daily Payouts",
+      "EOD DD on evals",
+      "Trailing DD on Pro accounts"
+    ]
+  },
+  {
+    "name": "APEX",
+    "account_types": [
+      "50K"
+    ],
+    "max_daily_loss": {
+      "50K": 2500
+    },
+    "max_total_loss": {
+      "50K": 2500
+    },
+    "profit_target": {
+      "50K": 3000
+    },
+    "payout_percentage": 90,
+    "min_trading_days": 8,
+    "special_features": [
+      "High Payout %",
+      "Promo Discounts",
+      "Trailing DD"
+    ]
+  },
+  {
+    "name": "FundedNextFutures",
+    "account_types": [
+      "25K",
+      "50K",
+      "150K"
+    ],
+    "max_daily_loss": {
+      "25K": 1250,
+      "50K": 2500,
+      "150K": 1250
+    },
+    "max_total_loss": {
+      "25K": 1250,
+      "50K": 2500,
+      "150K": 1250
+    },
+    "profit_target": {
+      "25K": 1500,
+      "50K": 3000,
+      "150K": 1500
+    },
+    "payout_percentage": 90,
+    "min_trading_days": 3,
+    "special_features": [
+      "EOD DD"
+    ]
+  },
+  {
+    "name": "YRM",
+    "account_types": [
+      "50K",
+      "100K",
+      "150K"
+    ],
+    "max_daily_loss": {
+      "50K": 2000,
+      "100K": 2000,
+      "150K": 2000
+    },
+    "max_total_loss": {
+      "50K": 3000,
+      "100K": 3000,
+      "150K": 3000
+    },
+    "profit_target": {
+      "50K": 3000,
+      "100K": 3000,
+      "150K": 3000
+    },
+    "payout_percentage": 90,
+    "min_trading_days": 2,
+    "special_features": [
+      "35% consistency in funded",
+      "quick payouts"
+    ]
+  }
+]
