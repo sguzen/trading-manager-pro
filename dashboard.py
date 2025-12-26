@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 from typing import Dict, List
 
 class Dashboard:
@@ -11,326 +11,224 @@ class Dashboard:
     
     def show_performance_analysis(self):
         trades = self.data_storage.load_trades()
-        withdrawals = self.data_storage.load_withdrawals()
         accounts = self.data_storage.load_accounts()
+        withdrawals = self.data_storage.load_withdrawals()
+        checkins = self.data_storage.load_daily_checkins()
         
         if not trades:
-            st.info("No trades logged yet. Start journaling to see performance analytics!")
+            st.info("No trades logged yet. Start logging trades to see performance analysis.")
             return
+        
+        df = pd.DataFrame(trades)
+        df['date'] = pd.to_datetime(df['date'])
         
         # Date range filter
-        st.subheader("📅 Date Range")
         col1, col2 = st.columns(2)
-        
-        trade_dates = [datetime.fromisoformat(t['date']).date() for t in trades if t.get('date')]
-        min_date = min(trade_dates) if trade_dates else date.today()
-        max_date = max(trade_dates) if trade_dates else date.today()
-        
         with col1:
-            start_date = st.date_input("From", value=min_date, min_value=min_date, max_value=max_date)
+            start_date = st.date_input("From", value=df['date'].min().date())
         with col2:
-            end_date = st.date_input("To", value=max_date, min_value=min_date, max_value=max_date)
+            end_date = st.date_input("To", value=df['date'].max().date())
         
-        # Filter trades by date
-        filtered_trades = [t for t in trades if start_date.isoformat() <= t.get('date', '') <= end_date.isoformat()]
+        # Filter data
+        mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
+        filtered_df = df[mask]
         
-        if not filtered_trades:
-            st.warning("No trades in the selected date range.")
+        if filtered_df.empty:
+            st.warning("No trades in selected date range.")
             return
         
-        # Overall metrics
-        st.subheader("📊 Overall Performance")
-        self._show_overall_metrics(filtered_trades, withdrawals)
+        # Key Metrics
+        st.subheader("📊 Key Performance Metrics")
         
-        # Grade performance
-        st.subheader("🎯 Performance by Grade")
-        self._show_grade_performance(filtered_trades)
-        
-        # Equity curve
-        st.subheader("📈 Equity Curve")
-        self._show_equity_curve(filtered_trades)
-        
-        # Emotional analysis
-        st.subheader("🧠 Psychology Analysis")
-        self._show_psychology_analysis(filtered_trades)
-        
-        # Playbook performance
-        st.subheader("📋 Playbook Performance")
-        self._show_playbook_performance(filtered_trades)
-        
-        # Account breakdown
-        st.subheader("💼 Account Performance")
-        self._show_account_performance(filtered_trades, accounts)
-    
-    def _show_overall_metrics(self, trades: List[Dict], withdrawals: List[Dict]):
         col1, col2, col3, col4, col5 = st.columns(5)
         
-        total_pnl = sum(t.get('pnl', 0) for t in trades)
-        winners = [t for t in trades if t.get('pnl', 0) > 0]
-        losers = [t for t in trades if t.get('pnl', 0) < 0]
-        win_rate = len(winners) / len(trades) * 100 if trades else 0
-        
-        avg_win = sum(t.get('pnl', 0) for t in winners) / len(winners) if winners else 0
-        avg_loss = sum(t.get('pnl', 0) for t in losers) / len(losers) if losers else 0
-        profit_factor = abs(sum(t.get('pnl', 0) for t in winners) / sum(t.get('pnl', 0) for t in losers)) if losers and sum(t.get('pnl', 0) for t in losers) != 0 else 0
+        total_trades = len(filtered_df)
+        winning_trades = len(filtered_df[filtered_df['pnl_net'] > 0])
+        losing_trades = len(filtered_df[filtered_df['pnl_net'] < 0])
+        win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
         
         with col1:
-            st.metric("Total P&L", f"${total_pnl:,.2f}", delta=f"{len(trades)} trades")
+            st.metric("Total Trades", total_trades)
+        
         with col2:
-            st.metric("Win Rate", f"{win_rate:.1f}%", delta=f"{len(winners)}W / {len(losers)}L")
+            st.metric("Win Rate", f"{win_rate:.1f}%")
+        
         with col3:
+            total_pnl = filtered_df['pnl_net'].sum()
+            st.metric("Total P&L", f"${total_pnl:,.2f}")
+        
+        with col4:
+            avg_win = filtered_df[filtered_df['pnl_net'] > 0]['pnl_net'].mean() if winning_trades > 0 else 0
             st.metric("Avg Win", f"${avg_win:,.2f}")
-        with col4:
-            st.metric("Avg Loss", f"${avg_loss:,.2f}")
+        
         with col5:
-            st.metric("Profit Factor", f"{profit_factor:.2f}")
+            avg_loss = filtered_df[filtered_df['pnl_net'] < 0]['pnl_net'].mean() if losing_trades > 0 else 0
+            st.metric("Avg Loss", f"${avg_loss:,.2f}")
         
-        # Second row - withdrawals and goal
-        col1, col2, col3, col4 = st.columns(4)
+        # Second row - Grade-based metrics
+        st.subheader("📋 Performance by Grade")
         
-        total_withdrawn = sum(w.get('amount', 0) for w in withdrawals)
-        goal = 1000000  # $1M goal
-        progress = total_withdrawn / goal * 100
+        if 'grade' in filtered_df.columns:
+            col1, col2, col3, col4 = st.columns(4)
+            
+            for i, (grade, col) in enumerate(zip(['A', 'B', 'C', 'F'], [col1, col2, col3, col4])):
+                grade_trades = filtered_df[filtered_df['grade'] == grade]
+                with col:
+                    grade_emoji = {"A": "🟢", "B": "🟡", "C": "🟠", "F": "🔴"}[grade]
+                    st.write(f"**{grade_emoji} {grade}-Grade**")
+                    if len(grade_trades) > 0:
+                        g_pnl = grade_trades['pnl_net'].sum()
+                        g_wins = (grade_trades['pnl_net'] > 0).sum()
+                        g_wr = g_wins / len(grade_trades) * 100
+                        st.metric("Trades", len(grade_trades))
+                        st.metric("P&L", f"${g_pnl:,.2f}")
+                        st.metric("Win Rate", f"{g_wr:.0f}%")
+                    else:
+                        st.write("No trades")
         
-        with col1:
-            st.metric("Total Withdrawn", f"${total_withdrawn:,.2f}")
-        with col2:
-            st.metric("Progress to $1M", f"{progress:.2f}%")
-        with col3:
-            loan_repaid = sum(w.get('amount', 0) for w in withdrawals if w.get('use_type') == 'Loan Repayment')
-            st.metric("Loan Repaid", f"${loan_repaid:,.2f}")
-        with col4:
-            a_b_rate = len([t for t in trades if t.get('grade') in ['A', 'B']]) / len(trades) * 100 if trades else 0
-            st.metric("A/B Setup Rate", f"{a_b_rate:.1f}%")
-    
-    def _show_grade_performance(self, trades: List[Dict]):
-        grades = ['A', 'B', 'C', 'F']
-        grade_data = []
+        # Charts
+        st.subheader("📈 Performance Charts")
         
-        for grade in grades:
-            grade_trades = [t for t in trades if t.get('grade') == grade]
-            if grade_trades:
-                wins = [t for t in grade_trades if t.get('pnl', 0) > 0]
-                total_pnl = sum(t.get('pnl', 0) for t in grade_trades)
-                win_rate = len(wins) / len(grade_trades) * 100
-                avg_pnl = total_pnl / len(grade_trades)
+        tab1, tab2, tab3, tab4 = st.tabs(["Equity Curve", "By Grade", "Daily P&L", "Psychology"])
+        
+        with tab1:
+            # Equity curve
+            equity_df = filtered_df.sort_values('date').copy()
+            equity_df['cumulative_pnl'] = equity_df['pnl_net'].cumsum()
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=equity_df['date'],
+                y=equity_df['cumulative_pnl'],
+                mode='lines+markers',
+                name='Cumulative P&L',
+                line=dict(color='green' if equity_df['cumulative_pnl'].iloc[-1] >= 0 else 'red')
+            ))
+            fig.update_layout(
+                title='Equity Curve',
+                xaxis_title='Date',
+                yaxis_title='Cumulative P&L ($)',
+                hovermode='x unified'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with tab2:
+            # Performance by grade
+            if 'grade' in filtered_df.columns:
+                grade_stats = filtered_df.groupby('grade').agg({
+                    'pnl_net': ['count', 'sum', 'mean']
+                }).round(2)
+                grade_stats.columns = ['Trades', 'Total P&L', 'Avg P&L']
                 
-                grade_data.append({
-                    "Grade": grade,
-                    "Trades": len(grade_trades),
-                    "Total P&L": f"${total_pnl:,.2f}",
-                    "Win Rate": f"{win_rate:.1f}%",
-                    "Avg P&L": f"${avg_pnl:,.2f}",
-                    "% of Trades": f"{len(grade_trades) / len(trades) * 100:.1f}%"
-                })
+                # Reorder
+                grade_order = ['A', 'B', 'C', 'F']
+                grade_stats = grade_stats.reindex([g for g in grade_order if g in grade_stats.index])
+                
+                st.dataframe(grade_stats, use_container_width=True)
+                
+                # Grade P&L chart
+                fig = go.Figure()
+                colors = {'A': 'green', 'B': 'gold', 'C': 'orange', 'F': 'red'}
+                for grade in grade_order:
+                    if grade in grade_stats.index:
+                        fig.add_trace(go.Bar(
+                            x=[grade],
+                            y=[grade_stats.loc[grade, 'Total P&L']],
+                            name=f"{grade}-Grade",
+                            marker_color=colors[grade]
+                        ))
+                fig.update_layout(title='P&L by Trade Grade', yaxis_title='Total P&L ($)')
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("No grade data available. Use the Live Trade Grader to log trades with grades.")
         
-        if grade_data:
-            df = pd.DataFrame(grade_data)
-            st.dataframe(df, use_container_width=True, hide_index=True)
+        with tab3:
+            # Daily P&L bars
+            daily_pnl = filtered_df.groupby(filtered_df['date'].dt.date)['pnl_net'].sum().reset_index()
+            daily_pnl.columns = ['date', 'pnl']
             
-            # Grade distribution chart
-            col1, col2 = st.columns(2)
+            colors = ['green' if x >= 0 else 'red' for x in daily_pnl['pnl']]
             
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                x=daily_pnl['date'],
+                y=daily_pnl['pnl'],
+                marker_color=colors,
+                name='Daily P&L'
+            ))
+            fig.update_layout(
+                title='Daily P&L',
+                xaxis_title='Date',
+                yaxis_title='P&L ($)'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Daily stats
+            col1, col2, col3 = st.columns(3)
             with col1:
-                grade_counts = {g: len([t for t in trades if t.get('grade') == g]) for g in grades}
-                fig = px.pie(
-                    values=list(grade_counts.values()),
-                    names=list(grade_counts.keys()),
-                    title="Trade Distribution by Grade",
-                    color=list(grade_counts.keys()),
-                    color_discrete_map={'A': 'green', 'B': 'yellow', 'C': 'orange', 'F': 'red'}
-                )
-                st.plotly_chart(fig, use_container_width=True)
-            
+                st.metric("Best Day", f"${daily_pnl['pnl'].max():,.2f}")
             with col2:
-                grade_pnl = {g: sum(t.get('pnl', 0) for t in trades if t.get('grade') == g) for g in grades}
-                fig = px.bar(
-                    x=list(grade_pnl.keys()),
-                    y=list(grade_pnl.values()),
-                    title="P&L by Grade",
-                    color=list(grade_pnl.keys()),
-                    color_discrete_map={'A': 'green', 'B': 'yellow', 'C': 'orange', 'F': 'red'}
-                )
-                fig.update_layout(showlegend=False, xaxis_title="Grade", yaxis_title="P&L ($)")
-                st.plotly_chart(fig, use_container_width=True)
+                st.metric("Worst Day", f"${daily_pnl['pnl'].min():,.2f}")
+            with col3:
+                green_days = len(daily_pnl[daily_pnl['pnl'] > 0])
+                st.metric("Green Days", f"{green_days}/{len(daily_pnl)} ({green_days/len(daily_pnl)*100:.0f}%)")
+        
+        with tab4:
+            # Psychology analysis
+            st.write("### Emotional State Impact")
             
-            # Key insight
-            if grade_data:
-                a_trades = [t for t in trades if t.get('grade') == 'A']
-                f_trades = [t for t in trades if t.get('grade') == 'F']
-                a_pnl = sum(t.get('pnl', 0) for t in a_trades) if a_trades else 0
-                f_pnl = sum(t.get('pnl', 0) for t in f_trades) if f_trades else 0
+            if 'emotional_state' in filtered_df.columns:
+                # P&L by emotional state
+                emotion_pnl = filtered_df.groupby('emotional_state')['pnl_net'].agg(['mean', 'sum', 'count'])
+                emotion_pnl.columns = ['Avg P&L', 'Total P&L', 'Trades']
                 
-                if a_pnl > 0 and f_pnl < 0:
-                    st.success(f"💡 Insight: Your A-grade setups made ${a_pnl:,.2f} while rule violations (F) cost ${abs(f_pnl):,.2f}. Stick to A/B setups!")
-                elif len(f_trades) > len(trades) * 0.2:
-                    st.error(f"⚠️ Warning: {len(f_trades) / len(trades) * 100:.0f}% of your trades are rule violations. Focus on waiting for proper setups.")
-    
-    def _show_equity_curve(self, trades: List[Dict]):
-        sorted_trades = sorted(trades, key=lambda x: (x.get('date', ''), x.get('time', '')))
+                fig = go.Figure()
+                fig.add_trace(go.Bar(
+                    x=emotion_pnl.index,
+                    y=emotion_pnl['Avg P&L'],
+                    marker_color=['green' if x >= 0 else 'red' for x in emotion_pnl['Avg P&L']],
+                    name='Avg P&L'
+                ))
+                fig.update_layout(
+                    title='Average P&L by Emotional State',
+                    xaxis_title='Emotional State (1=Calm, 10=Tilted)',
+                    yaxis_title='Average P&L ($)'
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Key insight
+                calm_trades = filtered_df[filtered_df['emotional_state'] <= 5]
+                tilted_trades = filtered_df[filtered_df['emotional_state'] > 5]
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    if len(calm_trades) > 0:
+                        st.metric("Avg P&L (Calm, ≤5)", f"${calm_trades['pnl_net'].mean():,.2f}")
+                with col2:
+                    if len(tilted_trades) > 0:
+                        st.metric("Avg P&L (Tilted, >5)", f"${tilted_trades['pnl_net'].mean():,.2f}")
         
-        cumulative_pnl = []
-        running_total = 0
-        dates = []
-        grades = []
+        # Export options
+        st.subheader("📥 Export Data")
         
-        for trade in sorted_trades:
-            running_total += trade.get('pnl', 0)
-            cumulative_pnl.append(running_total)
-            dates.append(trade.get('date', ''))
-            grades.append(trade.get('grade', 'C'))
-        
-        fig = go.Figure()
-        
-        # Color points by grade
-        grade_colors = {'A': 'green', 'B': 'gold', 'C': 'orange', 'F': 'red'}
-        colors = [grade_colors.get(g, 'gray') for g in grades]
-        
-        fig.add_trace(go.Scatter(
-            x=list(range(len(cumulative_pnl))),
-            y=cumulative_pnl,
-            mode='lines+markers',
-            name='Equity',
-            line=dict(color='blue', width=2),
-            marker=dict(color=colors, size=8)
-        ))
-        
-        fig.update_layout(
-            title="Equity Curve (colored by grade)",
-            xaxis_title="Trade #",
-            yaxis_title="Cumulative P&L ($)",
-            showlegend=False
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-    
-    def _show_psychology_analysis(self, trades: List[Dict]):
         col1, col2 = st.columns(2)
         
         with col1:
-            # Emotional state vs P&L
-            emotional_buckets = {
-                "1-3 (Calm)": [],
-                "4-6 (Neutral)": [],
-                "7-10 (Emotional)": []
-            }
-            
-            for trade in trades:
-                em = trade.get('emotional_state', 5)
-                if em <= 3:
-                    emotional_buckets["1-3 (Calm)"].append(trade)
-                elif em <= 6:
-                    emotional_buckets["4-6 (Neutral)"].append(trade)
-                else:
-                    emotional_buckets["7-10 (Emotional)"].append(trade)
-            
-            bucket_data = []
-            for bucket, bucket_trades in emotional_buckets.items():
-                if bucket_trades:
-                    pnl = sum(t.get('pnl', 0) for t in bucket_trades)
-                    wins = len([t for t in bucket_trades if t.get('pnl', 0) > 0])
-                    wr = wins / len(bucket_trades) * 100
-                    bucket_data.append({
-                        "Emotional State": bucket,
-                        "Trades": len(bucket_trades),
-                        "P&L": pnl,
-                        "Win Rate": wr
-                    })
-            
-            if bucket_data:
-                df = pd.DataFrame(bucket_data)
-                fig = px.bar(df, x="Emotional State", y="P&L", color="Win Rate",
-                            title="P&L by Emotional State")
-                st.plotly_chart(fig, use_container_width=True)
+            csv = filtered_df.to_csv(index=False)
+            st.download_button(
+                label="Download Trades CSV",
+                data=csv,
+                file_name=f"trades_{start_date}_{end_date}.csv",
+                mime="text/csv"
+            )
         
         with col2:
-            # Grade distribution by emotional state
-            emotional_grades = {}
-            for trade in trades:
-                em = trade.get('emotional_state', 5)
-                grade = trade.get('grade', 'C')
-                
-                if em <= 3:
-                    key = "Calm (1-3)"
-                elif em <= 6:
-                    key = "Neutral (4-6)"
-                else:
-                    key = "Emotional (7-10)"
-                
-                if key not in emotional_grades:
-                    emotional_grades[key] = {'A': 0, 'B': 0, 'C': 0, 'F': 0}
-                emotional_grades[key][grade] += 1
-            
-            if emotional_grades:
-                em_df = pd.DataFrame(emotional_grades).T
-                fig = px.bar(em_df, barmode='stack', title="Grades by Emotional State",
-                            color_discrete_map={'A': 'green', 'B': 'gold', 'C': 'orange', 'F': 'red'})
-                st.plotly_chart(fig, use_container_width=True)
-        
-        # Insight
-        emotional_trades = [t for t in trades if t.get('emotional_state', 5) >= 7]
-        calm_trades = [t for t in trades if t.get('emotional_state', 5) <= 3]
-        
-        if emotional_trades and calm_trades:
-            emotional_pnl = sum(t.get('pnl', 0) for t in emotional_trades)
-            calm_pnl = sum(t.get('pnl', 0) for t in calm_trades)
-            
-            if calm_pnl > emotional_pnl:
-                diff = calm_pnl - emotional_pnl
-                st.success(f"💡 You make ${diff:,.2f} more when trading calm vs emotional. Stick to your check-in rules!")
-            else:
-                st.warning("🧘 Consider only trading when emotional state is 5 or below.")
-    
-    def _show_playbook_performance(self, trades: List[Dict]):
-        playbooks = list(set(t.get('playbook', 'Unknown') for t in trades))
-        
-        pb_data = []
-        for pb in playbooks:
-            pb_trades = [t for t in trades if t.get('playbook') == pb]
-            if pb_trades:
-                pnl = sum(t.get('pnl', 0) for t in pb_trades)
-                wins = len([t for t in pb_trades if t.get('pnl', 0) > 0])
-                wr = wins / len(pb_trades) * 100
-                a_b_count = len([t for t in pb_trades if t.get('grade') in ['A', 'B']])
-                
-                pb_data.append({
-                    "Playbook": pb,
-                    "Trades": len(pb_trades),
-                    "P&L": f"${pnl:,.2f}",
-                    "Win Rate": f"{wr:.1f}%",
-                    "A/B Setups": a_b_count,
-                    "Avg P&L": f"${pnl / len(pb_trades):,.2f}"
-                })
-        
-        if pb_data:
-            df = pd.DataFrame(pb_data)
-            st.dataframe(df, use_container_width=True, hide_index=True)
-    
-    def _show_account_performance(self, trades: List[Dict], accounts: List[Dict]):
-        account_names = list(set(t.get('account', 'Unknown') for t in trades))
-        
-        acc_data = []
-        for acc_name in account_names:
-            acc_trades = [t for t in trades if t.get('account') == acc_name]
-            if acc_trades:
-                pnl = sum(t.get('pnl', 0) for t in acc_trades)
-                wins = len([t for t in acc_trades if t.get('pnl', 0) > 0])
-                wr = wins / len(acc_trades) * 100
-                
-                # Get account info
-                acc_info = next((a for a in accounts if a.get('name') == acc_name), {})
-                status = acc_info.get('status', 'unknown')
-                balance = acc_info.get('balance', 0)
-                
-                acc_data.append({
-                    "Account": acc_name,
-                    "Status": status.title(),
-                    "Balance": f"${balance:,.2f}",
-                    "Trades": len(acc_trades),
-                    "P&L": f"${pnl:,.2f}",
-                    "Win Rate": f"{wr:.1f}%"
-                })
-        
-        if acc_data:
-            df = pd.DataFrame(acc_data)
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            all_data = self.data_storage.export_all_data()
+            import json
+            json_str = json.dumps(all_data, indent=2, default=str)
+            st.download_button(
+                label="Download All Data JSON",
+                data=json_str,
+                file_name=f"trading_data_export_{datetime.now().strftime('%Y%m%d')}.json",
+                mime="application/json"
+            )
