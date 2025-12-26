@@ -21,24 +21,41 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Initialize session state
-if 'data_storage' not in st.session_state:
-    st.session_state.data_storage = DataStorage()
+def get_data_storage():
+    """Get or create DataStorage instance"""
+    if 'data_storage' not in st.session_state or st.session_state.data_storage is None:
+        st.session_state.data_storage = DataStorage()
+    return st.session_state.data_storage
 
-if 'config_manager' not in st.session_state:
-    st.session_state.config_manager = ConfigManager(st.session_state.data_storage)
+def get_config_manager():
+    """Get or create ConfigManager instance"""
+    if 'config_manager' not in st.session_state or st.session_state.config_manager is None:
+        st.session_state.config_manager = ConfigManager(get_data_storage())
+    return st.session_state.config_manager
 
-if 'trade_journal' not in st.session_state:
-    st.session_state.trade_journal = TradeJournal(st.session_state.data_storage)
+def get_trade_journal():
+    """Get or create TradeJournal instance"""
+    if 'trade_journal' not in st.session_state or st.session_state.trade_journal is None:
+        st.session_state.trade_journal = TradeJournal(get_data_storage())
+    return st.session_state.trade_journal
 
-if 'dashboard' not in st.session_state:
-    st.session_state.dashboard = Dashboard(st.session_state.data_storage)
+def get_dashboard():
+    """Get or create Dashboard instance"""
+    if 'dashboard' not in st.session_state or st.session_state.dashboard is None:
+        st.session_state.dashboard = Dashboard(get_data_storage())
+    return st.session_state.dashboard
 
-if 'live_trade' not in st.session_state:
-    st.session_state.live_trade = LiveTradeSession(st.session_state.data_storage)
+def get_live_trade():
+    """Get or create LiveTradeSession instance"""
+    if 'live_trade' not in st.session_state or st.session_state.live_trade is None:
+        st.session_state.live_trade = LiveTradeSession(get_data_storage())
+    return st.session_state.live_trade
 
-if 'settings_manager' not in st.session_state:
-    st.session_state.settings_manager = SettingsManager(st.session_state.data_storage)
+def get_settings_manager():
+    """Get or create SettingsManager instance"""
+    if 'settings_manager' not in st.session_state or st.session_state.settings_manager is None:
+        st.session_state.settings_manager = SettingsManager(get_data_storage())
+    return st.session_state.settings_manager
 
 def main():
     # Sidebar navigation
@@ -50,11 +67,11 @@ def main():
     )
     
     # Render live trade grader in sidebar (always visible)
-    st.session_state.live_trade.render_sidebar()
+    get_live_trade().render_sidebar()
     
     # Check if we need to show the trade entry modal
     if st.session_state.get('show_trade_entry_form', False):
-        st.session_state.live_trade.render_trade_entry_modal()
+        get_live_trade().render_trade_entry_modal()
     else:
         # Main content based on selection
         if page == "📊 Dashboard":
@@ -71,10 +88,11 @@ def main():
 def show_dashboard():
     st.title("🎯 Trading Manager Pro")
     
-    settings = st.session_state.data_storage.load_settings()
-    accounts = st.session_state.data_storage.load_accounts()
-    trades = st.session_state.data_storage.load_trades()
-    withdrawals = st.session_state.data_storage.load_withdrawals()
+    data_storage = get_data_storage()
+    settings = data_storage.load_settings()
+    accounts = data_storage.load_accounts()
+    trades = data_storage.load_trades()
+    withdrawals = data_storage.load_withdrawals()
     
     # Goal tracking row
     col1, col2, col3, col4 = st.columns(4)
@@ -173,27 +191,27 @@ def show_configuration():
     tab1, tab2, tab3, tab4 = st.tabs(["Prop Firms", "Accounts", "Playbooks", "Withdrawals"])
     
     with tab1:
-        st.session_state.config_manager.manage_prop_firms()
+        get_config_manager().manage_prop_firms()
     
     with tab2:
-        st.session_state.config_manager.manage_accounts()
+        get_config_manager().manage_accounts()
     
     with tab3:
-        st.session_state.config_manager.manage_playbooks()
+        get_config_manager().manage_playbooks()
     
     with tab4:
-        st.session_state.config_manager.manage_withdrawals()
+        get_config_manager().manage_withdrawals()
 
 def show_trade_journal():
     st.header("📝 Trade Journal")
-    st.session_state.trade_journal.show_journal()
+    get_trade_journal().show_journal()
 
 def show_performance_analysis():
     st.header("📈 Performance Analysis")
-    st.session_state.dashboard.show_performance_analysis()
+    get_dashboard().show_performance_analysis()
 
 def show_settings():
-    st.session_state.settings_manager.show_settings()
+    get_settings_manager().show_settings()
 
 if __name__ == "__main__":
     main()
