@@ -1,155 +1,105 @@
 # Trading Manager Pro
 
-A comprehensive Streamlit application for prop firm traders to track accounts, journal trades, manage psychology, and monitor progress toward withdrawal goals.
+A Streamlit-based trading journal and performance tracker for prop firm traders.
 
 ## Features
 
-- **Account Management**: Track multiple prop firm accounts (Tradeify, TopOne, TPT, APEX, etc.)
-- **Trade Journal**: Log trades with rule compliance tracking and performance analysis
-- **Psychology Monitoring**: Daily check-ins and emotional state tracking
-- **Performance Analytics**: Comprehensive charts and statistics
-- **Goal Tracking**: Monitor progress toward $5M withdrawal target
-- **Data Persistence**: All data saved locally in JSON format
+- **Multi-Account Management**: Track multiple prop firm accounts (Tradeify, TPT, TopOne, APEX, etc.)
+- **Playbook System with A/B/C Grading**: Define setups with hierarchical quality grades
+- **Trade Journal**: Log trades with automatic grade calculation
+- **Psychology Tracking**: Daily pre-market check-ins with trading approval system
+- **Performance Analytics**: Equity curves, grade performance, emotional analysis
+- **Withdrawal Tracking**: Track progress toward $1M goal with loan repayment
+
+## Setup Grading System
+
+Each playbook uses a hierarchical grading system with mandatory/optional rules:
+
+### Rule Types
+
+- **🔒 Mandatory**: Affects the grade calculation. Missing a mandatory rule impacts your grade.
+- **📝 Optional**: Tracked for analysis but doesn't affect the grade. Use for refining your edge over time.
+
+### Grade Tiers
+
+### 🔴 C Setup (Minimum)
+The absolute must-have criteria. If ANY **mandatory** C rule is missing, the trade is marked as **F (Failed)**.
+
+Example C rules:
+- 🔒 Market structure break confirmed (mandatory)
+- 🔒 Fair value gap present (mandatory)
+- 📝 Clean candle close (optional - tracking for refinement)
+
+### 🟡 B Setup (Better)
+All mandatory C rules met PLUS all mandatory B criteria.
+
+Example B rules:
+- 🔒 Clean 50% retracement (mandatory)
+- 🔒 Liquidity swept before entry (mandatory)
+- 📝 Volume confirmation (optional)
+
+### 🟢 A Setup (Best)
+All mandatory C + B rules met PLUS all mandatory A criteria.
+
+Example A rules:
+- 🔒 HTF confluence (4H or Daily) (mandatory)
+- 📝 Previous session high/low taken (optional - testing if it adds edge)
+
+### Grade Calculation
+
+| Grade | Requirements |
+|-------|-------------|
+| **A** | All mandatory C + B + A rules met |
+| **B** | All mandatory C + B rules met |
+| **C** | All mandatory C rules met |
+| **F** | Any mandatory C rule NOT met (rule violation) |
+
+**Note:** Optional rules are always tracked and stored, allowing you to later analyze if certain optional criteria correlate with higher win rates. This helps refine your playbook over time without affecting current grades.
 
 ## Installation
 
-1. **Clone or download the files**
-   - Save all Python files in the same directory
-   - Create a new folder for your trading app
-
-2. **Install requirements**
-   ```bash
-   pip install streamlit pandas plotly numpy
-   ```
-
-3. **Run the application**
-   ```bash
-   streamlit run main.py
-   ```
+```bash
+pip install -r requirements.txt
+streamlit run main.py
+```
 
 ## File Structure
 
 ```
-trading_app/
-├── main.py                 # Main Streamlit app
-├── data_storage.py         # Data persistence layer
-├── config_manager.py       # Configuration management
-├── trade_journal.py        # Trade logging and journal
-├── dashboard.py           # Performance analysis and charts
-├── requirements.txt       # Python dependencies
-├── trading_data/          # Data directory (auto-created)
-│   ├── accounts.json
-│   ├── trades.json
-│   ├── withdrawals.json
-│   └── daily_checkins.json
-└── README.md
+trading_manager_pro/
+├── main.py              # App entry point
+├── data_storage.py      # JSON persistence
+├── config_manager.py    # Prop firms, accounts, playbooks
+├── trade_journal.py     # Trade logging, check-ins
+├── dashboard.py         # Performance analytics
+├── requirements.txt     # Dependencies
+└── trading_data/        # Auto-created data folder
 ```
 
-## Getting Started
+## Usage
 
-1. **First Run**
-   - The app will create a `trading_data` folder automatically
-   - Default prop firms (Tradeify, TopOne, TPT, APEX) are pre-configured
+1. **Configuration → Prop Firms**: Add your prop firms and their rules
+2. **Configuration → Accounts**: Add your trading accounts
+3. **Configuration → Playbooks**: Create playbooks with A/B/C graded rules
+4. **Trade Journal → Daily Check-in**: Complete pre-market assessment
+5. **Trade Journal → Log Trade**: Journal trades with rule compliance
+6. **Performance Analysis**: Review grade-based performance
 
-2. **Configuration**
-   - Go to Configuration tab
-   - Add your accounts under "Accounts" tab
-   - Create trading playbooks with your rules
+## Pre-Market Check-in Rules
 
-3. **Daily Routine**
-   - Complete daily check-in before trading
-   - Log each trade with rule compliance
-   - Review performance in Dashboard
+Trading is blocked if:
+- Alcohol consumed in last 24 hours
+- Stress level ≥ 7
+- Sleep quality ≤ 4
 
-## Key Trading Manager Features
+## Path to $1M
 
-### Daily Check-in System
-- Sleep quality assessment
-- Stress level monitoring
-- Alcohol consumption tracking
-- Trading clearance based on psychological state
+1. Prove consistency with current 50K Tradeify account
+2. Extract first payouts and repay $5K loan
+3. Scale to 150K accounts (Tradeify/TopOne)
+4. Add TPT for daily payout capability
+5. Accumulate 20x 300K APEX accounts during 90% promos
 
-### Rule Compliance Tracking
-- Custom playbook creation with specific rules
-- Trade-by-trade rule adherence logging
-- Performance correlation with rule following
+## License
 
-### Account Scaling Path
-- Track evaluation → funded → payout progression
-- Monitor multiple prop firms simultaneously
-- Withdrawal tracking with reinvestment planning
-
-### Psychology Integration
-- Emotional state impact on performance
-- Stress correlation analysis
-- Self-sabotage pattern detection
-
-## Data Security
-
-- All data stored locally in JSON files
-- No cloud storage or external dependencies
-- Easy backup/restore functionality built-in
-- Export to CSV available for external analysis
-
-## Trading Manager Protocol Integration
-
-The app implements the trading manager protocol from your brief:
-
-### Pre-Market Check-ins
-- ✅ Sleep quality (1-10)
-- ✅ Stress level (1-10)
-- ✅ Alcohol consumption (Y/N)
-- ✅ Exercise status
-- ✅ Home stress level (1-10)
-- ✅ Trading plan documentation
-
-### Risk Management
-- ✅ Daily loss limits per account
-- ✅ Position sizing enforcement
-- ✅ Trade count limitations
-- ✅ Emotional state thresholds
-
-### Pattern Recognition
-- ✅ Rule violation tracking
-- ✅ Emotional trading detection
-- ✅ Success/self-sabotage cycle monitoring
-- ✅ Performance correlation analysis
-
-## Customization
-
-The app is designed to be easily customizable:
-
-- **Add new prop firms**: Modify the default firms in `data_storage.py`
-- **Custom rules**: Create unlimited playbooks with specific rule sets
-- **New metrics**: Add fields to trade logging in `trade_journal.py`
-- **Different goals**: Change the $5M target in dashboard calculations
-
-## Backup and Recovery
-
-- Use the built-in backup functionality in the app
-- Backup files are timestamped JSON files
-- Copy the entire `trading_data` folder for manual backups
-- Restore from any backup file through the interface
-
-## Troubleshooting
-
-**App won't start:**
-- Ensure all dependencies are installed: `pip install -r requirements.txt`
-- Check that all Python files are in the same directory
-- Run with: `streamlit run main.py`
-
-**Data not saving:**
-- Check write permissions in the app directory
-- Ensure `trading_data` folder can be created
-- Look for error messages in the Streamlit console
-
-**Performance issues:**
-- Large trade datasets may slow the app
-- Consider exporting old data and starting fresh periodically
-- Use date filters in analysis to limit data processing
-
-## Support
-
-This is your personal trading manager application. Modify it as needed for your specific requirements and trading style. The modular design makes it easy to add new features or customize existing ones.
-
-Remember: The goal is consistent profitability and psychological discipline, not just tracking. Use this tool to identify and break self-sabotage patterns while scaling toward your $1M annual payout target.
+MIT

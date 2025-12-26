@@ -50,13 +50,13 @@
     "account_number": "tpt 25k real 1",
     "status": "funded",
     "start_date": "2025-12-03",
-    "current_balance": 25068.0,
+    "current_balance": 25079.0,
     "max_daily_loss": 1250,
     "max_total_loss": 2000,
     "profit_target": 1500,
     "payout_percentage": 80,
     "notes": "",
     "created_at": "2025-12-03T10:52:04.123529",
-    "updated_at": "2025-12-03T13:56:42.754050"
+    "updated_at": "2025-12-03T14:21:20.131721"
   }
 ]

@@ -1,122 +1,108 @@
 import json
 import os
 import pandas as pd
-from datetime import datetime
-from typing import Dict, List, Any
+from datetime import datetime, date
+from typing import Dict, List, Optional
 
 class DataStorage:
+    """Handles all data persistence using JSON files"""
+    
     def __init__(self, data_dir: str = "trading_data"):
         self.data_dir = data_dir
-        self.ensure_data_directory()
-        
-    def ensure_data_directory(self):
+        self._ensure_data_dir()
+    
+    def _ensure_data_dir(self):
         """Create data directory if it doesn't exist"""
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
     
-    def save_json(self, filename: str, data: Any):
-        """Save data to JSON file"""
-        filepath = os.path.join(self.data_dir, f"{filename}.json")
-        with open(filepath, 'w') as f:
-            json.dump(data, f, indent=2, default=str)
+    def _get_filepath(self, filename: str) -> str:
+        """Get full filepath for a data file"""
+        return os.path.join(self.data_dir, filename)
     
-    def load_json(self, filename: str, default: Any = None):
-        """Load data from JSON file"""
-        filepath = os.path.join(self.data_dir, f"{filename}.json")
-        if os.path.exists(filepath):
-            try:
-                with open(filepath, 'r') as f:
-                    content = f.read().strip()
-                    if not content:  # Empty file
-                        return default or []
-                    return json.loads(content)
-            except (json.JSONDecodeError, ValueError):
-                # Corrupted file, return default and recreate
-                return default or []
-        return default or []
+    def _save_json(self, filename: str, data: any):
+        """Save data to a JSON file"""
+        filepath = self._get_filepath(filename)
+        try:
+            with open(filepath, 'w') as f:
+                json.dump(data, f, indent=2, default=str)
+        except Exception as e:
+            print(f"Error saving {filename}: {e}")
+    
+    def _load_json(self, filename: str, default: any = None) -> any:
+        """Load data from a JSON file"""
+        filepath = self._get_filepath(filename)
+        if not os.path.exists(filepath):
+            return default if default is not None else []
+        
+        try:
+            with open(filepath, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading {filename}: {e}")
+            return default if default is not None else []
     
     # Prop Firms
-    def save_prop_firms(self, prop_firms: List[Dict]):
-        self.save_json("prop_firms", prop_firms)
-    
     def load_prop_firms(self) -> List[Dict]:
-        default_firms = [
-            {
-                "name": "Tradeify",
-                "account_types": ["50K Growth", "100K Growth", "150K Growth"],
-                "max_daily_loss": {"50K Growth": 2000, "100K Growth": 4000, "150K Growth": 6000},
-                "max_total_loss": {"50K Growth": 3000, "100K Growth": 6000, "150K Growth": 9000},
-                "profit_target": {"50K Growth": 3000, "100K Growth": 6000, "150K Growth": 9000},
-                "payout_percentage": 80,
-                "min_trading_days": 4
-            },
-            {
-                "name": "TopOneFutures",
-                "account_types": ["50K", "100K", "150K"],
-                "max_daily_loss": {"50K": 2500, "100K": 5000, "150K": 7500},
-                "max_total_loss": {"50K": 3000, "100K": 6000, "150K": 9000},
-                "profit_target": {"50K": 3000, "100K": 6000, "150K": 9000},
-                "payout_percentage": 80,
-                "min_trading_days": 5
-            },
-            {
-                "name": "TakeProfitTrader",
-                "account_types": ["25K", "50K", "100K"],
-                "max_daily_loss": {"25K": 1250, "50K": 2500, "100K": 5000},
-                "max_total_loss": {"25K": 2000, "50K": 4000, "100K": 8000},
-                "profit_target": {"25K": 1500, "50K": 3000, "100K": 6000},
-                "payout_percentage": 80,
-                "min_trading_days": 5,
-                "special_features": ["Daily Payouts"]
-            },
-            {
-                "name": "APEX",
-                "account_types": ["300K"],
-                "max_daily_loss": {"300K": 9000},
-                "max_total_loss": {"300K": 15000},
-                "profit_target": {"300K": 15000},
-                "payout_percentage": 90,
-                "min_trading_days": 10,
-                "special_features": ["High Payout %", "Promo Discounts"]
-            }
-        ]
-        return self.load_json("prop_firms", default_firms)
+        return self._load_json("prop_firms.json", [])
+    
+    def save_prop_firms(self, firms: List[Dict]):
+        self._save_json("prop_firms.json", firms)
+    
+    def add_prop_firm(self, firm: Dict):
+        firms = self.load_prop_firms()
+        firm['id'] = len(firms) + 1
+        firm['created_at'] = datetime.now().isoformat()
+        firms.append(firm)
+        self.save_prop_firms(firms)
+        return firm
     
     # Accounts
-    def save_accounts(self, accounts: List[Dict]):
-        self.save_json("accounts", accounts)
-    
     def load_accounts(self) -> List[Dict]:
-        return self.load_json("accounts", [])
+        return self._load_json("accounts.json", [])
+    
+    def save_accounts(self, accounts: List[Dict]):
+        self._save_json("accounts.json", accounts)
+    
+    def add_account(self, account: Dict):
+        accounts = self.load_accounts()
+        account['id'] = len(accounts) + 1
+        account['created_at'] = datetime.now().isoformat()
+        account['updated_at'] = datetime.now().isoformat()
+        accounts.append(account)
+        self.save_accounts(accounts)
+        return account
+    
+    def update_account_balance(self, account_name: str, new_balance: float):
+        accounts = self.load_accounts()
+        for acc in accounts:
+            if acc['name'] == account_name:
+                acc['balance'] = new_balance
+                acc['updated_at'] = datetime.now().isoformat()
+                break
+        self.save_accounts(accounts)
     
     # Playbooks
-    def save_playbooks(self, playbooks: List[Dict]):
-        self.save_json("playbooks", playbooks)
-    
     def load_playbooks(self) -> List[Dict]:
-        default_playbooks = [
-            {
-                "name": "Scalping Setup",
-                "description": "High frequency scalping strategy",
-                "rules": [
-                    "Only trade during high volume hours (9:30-11:30, 1:30-3:30)",
-                    "Maximum 3 trades per day",
-                    "Risk/Reward minimum 1:1.5",
-                    "Stop loss maximum 8 ticks",
-                    "No trading if emotional state > 7/10"
-                ],
-                "max_position_size": {"first_trade": 200, "second_trade": 100, "third_trade": 100},
-                "max_daily_loss": 400
-            }
-        ]
-        return self.load_json("playbooks", default_playbooks)
+        return self._load_json("playbooks.json", [])
+    
+    def save_playbooks(self, playbooks: List[Dict]):
+        self._save_json("playbooks.json", playbooks)
+    
+    def add_playbook(self, playbook: Dict):
+        playbooks = self.load_playbooks()
+        playbook['id'] = len(playbooks) + 1
+        playbook['created_at'] = datetime.now().isoformat()
+        playbooks.append(playbook)
+        self.save_playbooks(playbooks)
+        return playbook
     
     # Trades
-    def save_trades(self, trades: List[Dict]):
-        self.save_json("trades", trades)
-    
     def load_trades(self) -> List[Dict]:
-        return self.load_json("trades", [])
+        return self._load_json("trades.json", [])
+    
+    def save_trades(self, trades: List[Dict]):
+        self._save_json("trades.json", trades)
     
     def add_trade(self, trade: Dict):
         trades = self.load_trades()
@@ -124,13 +110,30 @@ class DataStorage:
         trade['timestamp'] = datetime.now().isoformat()
         trades.append(trade)
         self.save_trades(trades)
+        return trade
+    
+    def get_trades_by_account(self, account_name: str) -> List[Dict]:
+        trades = self.load_trades()
+        return [t for t in trades if t.get('account') == account_name]
+    
+    def get_trades_by_playbook(self, playbook_name: str) -> List[Dict]:
+        trades = self.load_trades()
+        return [t for t in trades if t.get('playbook') == playbook_name]
+    
+    def get_trades_by_grade(self, grade: str) -> List[Dict]:
+        trades = self.load_trades()
+        return [t for t in trades if t.get('grade') == grade]
+    
+    def get_trades_by_date_range(self, start_date: str, end_date: str) -> List[Dict]:
+        trades = self.load_trades()
+        return [t for t in trades if start_date <= t.get('date', '') <= end_date]
     
     # Withdrawals
-    def save_withdrawals(self, withdrawals: List[Dict]):
-        self.save_json("withdrawals", withdrawals)
-    
     def load_withdrawals(self) -> List[Dict]:
-        return self.load_json("withdrawals", [])
+        return self._load_json("withdrawals.json", [])
+    
+    def save_withdrawals(self, withdrawals: List[Dict]):
+        self._save_json("withdrawals.json", withdrawals)
     
     def add_withdrawal(self, withdrawal: Dict):
         withdrawals = self.load_withdrawals()
@@ -138,40 +141,103 @@ class DataStorage:
         withdrawal['timestamp'] = datetime.now().isoformat()
         withdrawals.append(withdrawal)
         self.save_withdrawals(withdrawals)
+        return withdrawal
     
-    # Daily Check-ins (for trading psychology)
-    def save_daily_checkins(self, checkins: List[Dict]):
-        self.save_json("daily_checkins", checkins)
+    # Daily Check-ins
+    def load_checkins(self) -> List[Dict]:
+        return self._load_json("daily_checkins.json", [])
     
-    def load_daily_checkins(self) -> List[Dict]:
-        return self.load_json("daily_checkins", [])
+    def save_checkins(self, checkins: List[Dict]):
+        self._save_json("daily_checkins.json", checkins)
     
-    def add_daily_checkin(self, checkin: Dict):
-        checkins = self.load_daily_checkins()
+    def add_checkin(self, checkin: Dict):
+        checkins = self.load_checkins()
         checkin['id'] = len(checkins) + 1
-        checkin['date'] = datetime.now().date().isoformat()
         checkin['timestamp'] = datetime.now().isoformat()
         checkins.append(checkin)
-        self.save_daily_checkins(checkins)
+        self.save_checkins(checkins)
+        return checkin
     
-    # Export data
+    def get_today_checkin(self) -> Optional[Dict]:
+        checkins = self.load_checkins()
+        today = date.today().isoformat()
+        for c in checkins:
+            if c.get('date') == today:
+                return c
+        return None
+    
+    # Analytics helpers
+    def get_performance_summary(self) -> Dict:
+        """Get overall performance metrics"""
+        trades = self.load_trades()
+        withdrawals = self.load_withdrawals()
+        
+        if not trades:
+            return {
+                "total_trades": 0,
+                "total_pnl": 0,
+                "win_rate": 0,
+                "avg_win": 0,
+                "avg_loss": 0,
+                "total_withdrawn": 0
+            }
+        
+        winning = [t for t in trades if t.get('pnl', 0) > 0]
+        losing = [t for t in trades if t.get('pnl', 0) < 0]
+        
+        return {
+            "total_trades": len(trades),
+            "total_pnl": sum(t.get('pnl', 0) for t in trades),
+            "win_rate": len(winning) / len(trades) * 100 if trades else 0,
+            "avg_win": sum(t.get('pnl', 0) for t in winning) / len(winning) if winning else 0,
+            "avg_loss": sum(t.get('pnl', 0) for t in losing) / len(losing) if losing else 0,
+            "total_withdrawn": sum(w.get('amount', 0) for w in withdrawals),
+            "grade_a_trades": len([t for t in trades if t.get('grade') == 'A']),
+            "grade_b_trades": len([t for t in trades if t.get('grade') == 'B']),
+            "grade_c_trades": len([t for t in trades if t.get('grade') == 'C']),
+            "rule_violations": len([t for t in trades if t.get('grade') == 'F'])
+        }
+    
+    def get_grade_performance(self) -> Dict:
+        """Get performance broken down by trade grade"""
+        trades = self.load_trades()
+        
+        result = {}
+        for grade in ['A', 'B', 'C', 'F']:
+            grade_trades = [t for t in trades if t.get('grade') == grade]
+            if grade_trades:
+                wins = [t for t in grade_trades if t.get('pnl', 0) > 0]
+                result[grade] = {
+                    "count": len(grade_trades),
+                    "total_pnl": sum(t.get('pnl', 0) for t in grade_trades),
+                    "win_rate": len(wins) / len(grade_trades) * 100,
+                    "avg_pnl": sum(t.get('pnl', 0) for t in grade_trades) / len(grade_trades)
+                }
+            else:
+                result[grade] = {"count": 0, "total_pnl": 0, "win_rate": 0, "avg_pnl": 0}
+        
+        return result
+    
+    # Export functionality
     def export_to_csv(self, data_type: str) -> pd.DataFrame:
         """Export data to CSV format"""
-        if data_type == "trades":
-            data = self.load_trades()
-        elif data_type == "accounts":
-            data = self.load_accounts()
-        elif data_type == "withdrawals":
-            data = self.load_withdrawals()
-        elif data_type == "checkins":
-            data = self.load_daily_checkins()
-        else:
+        data_map = {
+            "trades": self.load_trades,
+            "accounts": self.load_accounts,
+            "withdrawals": self.load_withdrawals,
+            "checkins": self.load_checkins,
+            "playbooks": self.load_playbooks,
+            "prop_firms": self.load_prop_firms
+        }
+        
+        if data_type not in data_map:
             return pd.DataFrame()
         
+        data = data_map[data_type]()
         return pd.DataFrame(data)
     
     # Backup functionality
-    def create_backup(self):
+    def create_backup(self) -> str:
         """Create a backup of all data"""
         backup_data = {
             "prop_firms": self.load_prop_firms(),
@@ -179,23 +245,35 @@ class DataStorage:
             "playbooks": self.load_playbooks(),
             "trades": self.load_trades(),
             "withdrawals": self.load_withdrawals(),
-            "daily_checkins": self.load_daily_checkins(),
+            "daily_checkins": self.load_checkins(),
             "backup_timestamp": datetime.now().isoformat()
         }
         
-        backup_filename = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        self.save_json(backup_filename, backup_data)
+        backup_filename = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        self._save_json(backup_filename, backup_data)
         return backup_filename
     
-    def restore_backup(self, backup_filename: str):
-        """Restore data from backup"""
-        backup_data = self.load_json(backup_filename.replace('.json', ''))
-        if backup_data:
-            self.save_prop_firms(backup_data.get("prop_firms", []))
-            self.save_accounts(backup_data.get("accounts", []))
-            self.save_playbooks(backup_data.get("playbooks", []))
-            self.save_trades(backup_data.get("trades", []))
-            self.save_withdrawals(backup_data.get("withdrawals", []))
-            self.save_daily_checkins(backup_data.get("daily_checkins", []))
+    def restore_backup(self, backup_filename: str) -> bool:
+        """Restore data from a backup file"""
+        try:
+            backup_data = self._load_json(backup_filename)
+            if not backup_data:
+                return False
+            
+            if "prop_firms" in backup_data:
+                self.save_prop_firms(backup_data["prop_firms"])
+            if "accounts" in backup_data:
+                self.save_accounts(backup_data["accounts"])
+            if "playbooks" in backup_data:
+                self.save_playbooks(backup_data["playbooks"])
+            if "trades" in backup_data:
+                self.save_trades(backup_data["trades"])
+            if "withdrawals" in backup_data:
+                self.save_withdrawals(backup_data["withdrawals"])
+            if "daily_checkins" in backup_data:
+                self.save_checkins(backup_data["daily_checkins"])
+            
             return True
-        return False
+        except Exception as e:
+            print(f"Error restoring backup: {e}")
+            return False

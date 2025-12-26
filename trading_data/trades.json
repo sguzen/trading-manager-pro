@@ -166,5 +166,37 @@
     "entry_price": 4231.4,
     "exit_price": 4233.4,
     "pnl_points": 2.0
+  },
+  {
+    "date": "2025-12-03",
+    "entry_time": "07:00:00",
+    "exit_time": "10:00:00",
+    "account": "TakeProfitTrader - 25K (tpt 25k real 1)",
+    "account_id": "tpt 25k real 1",
+    "playbook": "Bread'n'Butter",
+    "symbol": "MGC",
+    "direction": "Long",
+    "position_size": 3,
+    "pnl_gross": 12.0,
+    "pnl_net": 11.0,
+    "commission": 1.0,
+    "setup_quality": 5,
+    "execution_quality": 4,
+    "emotional_state": 5,
+    "was_planned": false,
+    "followed_rules": false,
+    "would_repeat": true,
+    "rule_compliance": {
+      "rule_0": false,
+      "rule_1": true,
+      "rule_2": true
+    },
+    "session": "Pre-Market",
+    "market_condition": "Trending Up",
+    "volume_condition": "Low",
+    "trade_duration": "Scalp (<5min)",
+    "notes": "THis is a continuation. \nAfter the initial aggressive trailing I got stopped. Price created an OB and showed signs it was ready to keep going. \nRisk still within the 100 dollars",
+    "id": 6,
+    "timestamp": "2025-12-03T14:21:20.134405"
   }
 ]
