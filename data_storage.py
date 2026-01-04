@@ -173,6 +173,7 @@ class DataStorage:
             "trades": self.load_trades(),
             "withdrawals": self.load_withdrawals(),
             "daily_checkins": self.load_daily_checkins(),
+            "daily_entries": self.load_daily_entries(),
             "exported_at": datetime.now().isoformat()
         }
     
@@ -191,3 +192,5 @@ class DataStorage:
             self.save_withdrawals(data["withdrawals"])
         if "daily_checkins" in data:
             self.save_daily_checkins(data["daily_checkins"])
+        if "daily_entries" in data:
+            self.save_daily_entries(data["daily_entries"])

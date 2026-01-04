@@ -63,7 +63,7 @@ def main():
     
     page = st.sidebar.selectbox(
         "Navigate",
-        ["📊 Dashboard", "⚙️ Configuration", "📝 Trade Journal", "📈 Performance", "🔧 Settings"]
+        ["📊 Dashboard", "⚙️ Configuration", "📝 Trade Journal", "📈 Performance", "🔧 Settings", "💾 Backup"]
     )
     
     # Render live trade grader in sidebar (always visible)
@@ -84,6 +84,8 @@ def main():
             show_performance_analysis()
         elif page == "🔧 Settings":
             show_settings()
+        elif page == "💾 Backup":
+            show_backup()
 
 def show_dashboard():
     st.title("🎯 Trading Manager Pro")
@@ -212,6 +214,92 @@ def show_performance_analysis():
 
 def show_settings():
     get_settings_manager().show_settings()
+
+def show_backup():
+    st.header("💾 Backup & Restore")
+    
+    data_storage = get_data_storage()
+    
+    st.markdown("""
+    **Your data is stored locally** on Streamlit's servers and can be lost when the app restarts or redeploys.
+    
+    **Download backups regularly!**
+    """)
+    
+    st.markdown("---")
+    
+    # DOWNLOAD BACKUP
+    st.subheader("⬇️ Download Backup")
+    
+    all_data = data_storage.export_all_data()
+    json_str = json.dumps(all_data, indent=2, default=str)
+    
+    # Show summary
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Trades", len(all_data.get('trades', [])))
+    col2.metric("Accounts", len(all_data.get('accounts', [])))
+    col3.metric("Daily Entries", len(all_data.get('daily_entries', [])))
+    col4.metric("Withdrawals", len(all_data.get('withdrawals', [])))
+    
+    filename = f"trading_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    
+    st.download_button(
+        label="📥 Download Full Backup",
+        data=json_str,
+        file_name=filename,
+        mime="application/json",
+        type="primary"
+    )
+    
+    st.markdown("---")
+    
+    # RESTORE BACKUP
+    st.subheader("⬆️ Restore from Backup")
+    
+    st.warning("⚠️ Restoring will **OVERWRITE** all current data!")
+    
+    uploaded_file = st.file_uploader("Upload backup JSON file", type=['json'])
+    
+    if uploaded_file is not None:
+        try:
+            backup_data = json.loads(uploaded_file.read().decode('utf-8'))
+            
+            # Show what's in the backup
+            st.write("**Backup contents:**")
+            col1, col2, col3, col4 = st.columns(4)
+            col1.write(f"Trades: {len(backup_data.get('trades', []))}")
+            col2.write(f"Accounts: {len(backup_data.get('accounts', []))}")
+            col3.write(f"Daily Entries: {len(backup_data.get('daily_entries', []))}")
+            col4.write(f"Withdrawals: {len(backup_data.get('withdrawals', []))}")
+            
+            if backup_data.get('exported_at'):
+                st.write(f"Backup date: {backup_data['exported_at']}")
+            
+            # Confirm restore
+            confirm = st.checkbox("I understand this will overwrite all current data")
+            
+            if confirm:
+                if st.button("🔄 Restore Backup", type="primary"):
+                    data_storage.import_data(backup_data)
+                    st.success("✅ Backup restored successfully!")
+                    st.balloons()
+                    st.rerun()
+        
+        except json.JSONDecodeError:
+            st.error("Invalid JSON file")
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
+    
+    st.markdown("---")
+    
+    # AUTO-BACKUP REMINDER
+    st.subheader("💡 Backup Tips")
+    st.markdown("""
+    - **Download backup after every trading session**
+    - Store backups in Google Drive, Dropbox, or your computer
+    - Keep multiple versions (don't overwrite old backups)
+    - Backup filename includes date/time for easy tracking
+    """)
 
 if __name__ == "__main__":
     main()
