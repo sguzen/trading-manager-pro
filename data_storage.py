@@ -140,7 +140,7 @@ class DataStorage:
         self.save_withdrawals(withdrawals)
         return withdrawal
     
-    # Daily Check-ins
+    # Daily Check-ins (old - kept for compatibility)
     def load_daily_checkins(self) -> List[Dict]:
         return self._load_json("daily_checkins.json")
     
@@ -155,6 +155,13 @@ class DataStorage:
         checkins.append(checkin)
         self.save_daily_checkins(checkins)
         return checkin
+    
+    # Daily Entries (new - plan & review)
+    def load_daily_entries(self) -> List[Dict]:
+        return self._load_json("daily_entries.json")
+    
+    def save_daily_entries(self, entries: List[Dict]):
+        self._save_json("daily_entries.json", entries)
     
     # Export/Import
     def export_all_data(self) -> Dict:
