@@ -17,36 +17,41 @@ class LiveTradeSession:
         settings = self.data_storage.load_settings()
         must_have_rules = settings.get('must_have_rules', [])
         conditions = settings.get('conditions', [])
-        sizing = settings.get('position_sizing', {
+        sizing = settings.get('position_sizing', {})
+        
+        # Safe defaults
+        default_sizing = {
             "A": {"drawdown_pct": 50, "label": "Full Size"},
             "B": {"drawdown_pct": 30, "label": "Reduced"},
             "C": {"drawdown_pct": 15, "label": "Minimum"},
             "F": {"drawdown_pct": 0, "label": "NO TRADE"}
-        })
+        }
         
         # Check must-haves
         if must_have_rules:
             all_must_have = all(must_have_checked.get(f"must_{i}", False) 
                                for i in range(len(must_have_rules)))
             if not all_must_have:
-                return "F", f"0% ({sizing.get('F', {}).get('label', 'NO TRADE')})"
+                f_info = sizing.get('F', default_sizing['F'])
+                dd = f_info.get('drawdown_pct', 0)
+                lbl = f_info.get('label', 'NO TRADE')
+                return "F", f"{dd}% ({lbl})"
         
         # Find highest grade from checked conditions
-        # Priority: A > B > C
         highest_grade = "C"  # Default if must-haves met
         
         for i, cond in enumerate(conditions):
             if conditions_checked.get(f"cond_{i}", False):
                 unlocks = cond.get('unlocks', 'C')
-                # Upgrade if this condition unlocks a higher grade
                 if unlocks == "A":
                     highest_grade = "A"
                 elif unlocks == "B" and highest_grade != "A":
                     highest_grade = "B"
-                # C doesn't upgrade anything
         
-        size_info = sizing.get(highest_grade, {"drawdown_pct": 0, "label": "Unknown"})
-        size_label = f"{size_info['drawdown_pct']}% ({size_info['label']})"
+        size_info = sizing.get(highest_grade, default_sizing.get(highest_grade, {}))
+        dd = size_info.get('drawdown_pct', 0)
+        lbl = size_info.get('label', highest_grade)
+        size_label = f"{dd}% ({lbl})"
         
         return highest_grade, size_label
     
