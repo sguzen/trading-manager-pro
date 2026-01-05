@@ -335,63 +335,116 @@ class ConfigManager:
                                           for a in funded_accounts]
                         selected_account = st.selectbox("Account", account_options)
                         
-                        amount = st.number_input("Withdrawal Amount ($)", min_value=0.01, value=100.0)
+                        amount = st.number_input("Total Withdrawal ($)", min_value=0.01, value=100.0)
                         withdrawal_date = st.date_input("Withdrawal Date")
                     
                     with col2:
                         status = st.selectbox("Status", ["pending", "approved", "paid", "rejected"])
-                        used_for = st.selectbox("Allocation", 
-                                               ["Reinvestment", "Personal", "Debt Payment", "Savings", "Other"])
-                        
-                        if used_for == "Reinvestment":
-                            reinvest_details = st.text_input("Reinvestment Details", 
-                                                            placeholder="e.g., New 100K evaluation")
-                        else:
-                            reinvest_details = ""
                     
+                    # Multi-allocation
+                    st.write("**Allocation Breakdown:**")
+                    st.caption("Split this payout across multiple purposes")
+                    
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        debt_amt = st.number_input("Debt Payment ($)", min_value=0.0, value=0.0, step=10.0)
+                    with col2:
+                        reinvest_amt = st.number_input("Reinvestment ($)", min_value=0.0, value=0.0, step=10.0)
+                    with col3:
+                        savings_amt = st.number_input("Savings ($)", min_value=0.0, value=0.0, step=10.0)
+                    with col4:
+                        personal_amt = st.number_input("Personal ($)", min_value=0.0, value=0.0, step=10.0)
+                    
+                    # Validation
+                    allocated = debt_amt + reinvest_amt + savings_amt + personal_amt
+                    remaining = amount - allocated
+                    
+                    if remaining > 0:
+                        st.warning(f"${remaining:.2f} unallocated")
+                    elif remaining < 0:
+                        st.error(f"Over-allocated by ${abs(remaining):.2f}")
+                    else:
+                        st.success("✓ Fully allocated")
+                    
+                    reinvest_details = st.text_input("Reinvestment Details", 
+                                                    placeholder="e.g., New 100K eval from Tradeify")
                     notes = st.text_area("Notes", placeholder="Any additional details...")
                     
                     if st.form_submit_button("Log Withdrawal"):
-                        acc_idx = account_options.index(selected_account)
-                        selected_acc = funded_accounts[acc_idx]
-                        
-                        withdrawal_data = {
-                            "account": selected_account,
-                            "account_id": selected_acc.get('account_number', ''),
-                            "prop_firm": selected_acc.get('prop_firm', ''),
-                            "amount": amount,
-                            "date": withdrawal_date.isoformat(),
-                            "status": status,
-                            "allocation": used_for,
-                            "reinvest_details": reinvest_details,
-                            "used_for_personal": used_for == "Personal",
-                            "notes": notes
-                        }
-                        self.data_storage.add_withdrawal(withdrawal_data)
-                        st.success(f"Logged ${amount:.2f} withdrawal!")
-                        st.rerun()
+                        if remaining != 0:
+                            st.error("Please allocate the exact withdrawal amount")
+                        else:
+                            acc_idx = account_options.index(selected_account)
+                            selected_acc = funded_accounts[acc_idx]
+                            
+                            withdrawal_data = {
+                                "account": selected_account,
+                                "account_id": selected_acc.get('account_number', ''),
+                                "prop_firm": selected_acc.get('prop_firm', ''),
+                                "amount": amount,
+                                "date": withdrawal_date.isoformat(),
+                                "status": status,
+                                "allocations": {
+                                    "debt": debt_amt,
+                                    "reinvestment": reinvest_amt,
+                                    "savings": savings_amt,
+                                    "personal": personal_amt
+                                },
+                                "reinvest_details": reinvest_details,
+                                "notes": notes
+                            }
+                            self.data_storage.add_withdrawal(withdrawal_data)
+                            st.success(f"Logged ${amount:.2f} withdrawal!")
+                            st.rerun()
         
         # Display withdrawals
         if withdrawals:
             st.write("### Withdrawal History")
             
-            # Summary
+            # Summary - handle both old and new format
             total_withdrawn = sum(w.get('amount', 0) for w in withdrawals if w.get('status') == 'paid')
             pending = sum(w.get('amount', 0) for w in withdrawals if w.get('status') == 'pending')
-            reinvested = sum(w.get('amount', 0) for w in withdrawals 
-                           if w.get('status') == 'paid' and w.get('allocation') == 'Reinvestment')
-            debt_paid = sum(w.get('amount', 0) for w in withdrawals 
-                          if w.get('status') == 'paid' and w.get('allocation') == 'Debt Payment')
             
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("Total Paid Out", f"${total_withdrawn:,.2f}")
-            with col2:
-                st.metric("Pending", f"${pending:,.2f}")
-            with col3:
-                st.metric("Reinvested", f"${reinvested:,.2f}")
-            with col4:
-                st.metric("Debt Paid", f"${debt_paid:,.2f}")
+            # Calculate from allocations (new format) or allocation field (old format)
+            reinvested = 0
+            debt_paid = 0
+            savings = 0
+            personal = 0
+            
+            for w in withdrawals:
+                if w.get('status') != 'paid':
+                    continue
+                    
+                if 'allocations' in w:
+                    # New format
+                    alloc = w['allocations']
+                    reinvested += alloc.get('reinvestment', 0)
+                    debt_paid += alloc.get('debt', 0)
+                    savings += alloc.get('savings', 0)
+                    personal += alloc.get('personal', 0)
+                else:
+                    # Old format - single allocation
+                    amt = w.get('amount', 0)
+                    alloc_type = w.get('allocation', '')
+                    if alloc_type == 'Reinvestment':
+                        reinvested += amt
+                    elif alloc_type == 'Debt Payment':
+                        debt_paid += amt
+                    elif alloc_type == 'Savings':
+                        savings += amt
+                    elif alloc_type == 'Personal':
+                        personal += amt
+            
+            col1, col2, col3, col4, col5 = st.columns(5)
+            col1.metric("Total Paid", f"${total_withdrawn:,.2f}")
+            col2.metric("Debt Paid", f"${debt_paid:,.2f}")
+            col3.metric("Reinvested", f"${reinvested:,.2f}")
+            col4.metric("Savings", f"${savings:,.2f}")
+            col5.metric("Personal", f"${personal:,.2f}")
+            
+            # Pending
+            if pending > 0:
+                st.info(f"⏳ Pending: ${pending:,.2f}")
             
             # Withdrawal list
             for i, w in enumerate(sorted(withdrawals, key=lambda x: x.get('date', ''), reverse=True)):
@@ -404,7 +457,21 @@ class ConfigManager:
                     with col1:
                         st.write(f"**Account:** {w.get('account', 'N/A')}")
                         st.write(f"**Status:** {w.get('status', 'N/A')}")
-                        st.write(f"**Allocation:** {w.get('allocation', 'N/A')}")
+                        
+                        # Show allocations
+                        if 'allocations' in w:
+                            st.write("**Allocations:**")
+                            alloc = w['allocations']
+                            if alloc.get('debt', 0) > 0:
+                                st.write(f"  • Debt: ${alloc['debt']:,.2f}")
+                            if alloc.get('reinvestment', 0) > 0:
+                                st.write(f"  • Reinvest: ${alloc['reinvestment']:,.2f}")
+                            if alloc.get('savings', 0) > 0:
+                                st.write(f"  • Savings: ${alloc['savings']:,.2f}")
+                            if alloc.get('personal', 0) > 0:
+                                st.write(f"  • Personal: ${alloc['personal']:,.2f}")
+                        else:
+                            st.write(f"**Allocation:** {w.get('allocation', 'N/A')}")
                     
                     with col2:
                         if w.get('reinvest_details'):

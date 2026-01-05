@@ -50,8 +50,16 @@ class SettingsManager:
         
         col1, col2 = st.columns(2)
         with col1:
-            debt_paid = sum(w['amount'] for w in withdrawals 
-                          if w.get('status') == 'paid' and w.get('allocation') == 'Debt Payment')
+            # Handle both old and new format
+            debt_paid = 0
+            for w in withdrawals:
+                if w.get('status') != 'paid':
+                    continue
+                if 'allocations' in w:
+                    debt_paid += w['allocations'].get('debt', 0)
+                elif w.get('allocation') == 'Debt Payment':
+                    debt_paid += w.get('amount', 0)
+            
             remaining = max(0, settings.get('debt_amount', 5000) - debt_paid)
             st.metric(f"{settings.get('debt_name', 'Debt')} Left", f"${remaining:,.2f}")
             if settings.get('debt_amount', 0) > 0:

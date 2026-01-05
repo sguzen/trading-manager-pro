@@ -116,10 +116,17 @@ def show_dashboard():
         st.metric("Evaluation Accounts", len(eval_accounts))
     
     with col4:
-        # Debt tracking
+        # Debt tracking - handle both old and new format
         debt_amount = settings.get('debt_amount', 5000)
-        debt_paid = sum(w['amount'] for w in withdrawals 
-                       if w.get('status') == 'paid' and w.get('allocation') == 'Debt Payment')
+        debt_paid = 0
+        for w in withdrawals:
+            if w.get('status') != 'paid':
+                continue
+            if 'allocations' in w:
+                debt_paid += w['allocations'].get('debt', 0)
+            elif w.get('allocation') == 'Debt Payment':
+                debt_paid += w.get('amount', 0)
+        
         debt_remaining = max(0, debt_amount - debt_paid)
         st.metric(f"{settings.get('debt_name', 'Debt')} Left", f"${debt_remaining:,.2f}")
         if debt_amount > 0:
