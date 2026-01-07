@@ -204,7 +204,7 @@ class DataStorage:
         return self.save_withdrawals(withdrawals)
     
     # ============================================
-    # PSYCHOLOGICAL CHECK-INS (Phase 1)
+    # PSYCHOLOGICAL CHECK-INS (Phase 1 - NEW)
     # ============================================
     
     def load_psychological_checkins(self) -> List[Dict]:
@@ -216,8 +216,25 @@ class DataStorage:
         return self.save_data('psychological_checkins', checkins)
     
     def load_daily_checkins(self) -> List[Dict]:
-        """Load daily check-ins (alias for psychological_checkins)."""
-        return self.load_psychological_checkins()
+        """Load daily check-ins (kept for compatibility with old code)."""
+        # Try new format first, fall back to old
+        psych = self.load_psychological_checkins()
+        if psych:
+            return psych
+        return self.load_data('daily_checkins')
+    
+    def save_daily_checkins(self, checkins: List[Dict]):
+        """Save daily checkins (old format compatibility)."""
+        return self.save_data('daily_checkins', checkins)
+    
+    def add_daily_checkin(self, checkin: Dict):
+        """Add checkin (old format compatibility)."""
+        checkins = self.load_daily_checkins()
+        checkin['id'] = len(checkins) + 1
+        checkin['date'] = date.today().isoformat()
+        checkin['timestamp'] = datetime.now().isoformat()
+        checkins.append(checkin)
+        return self.save_daily_checkins(checkins)
     
     # ============================================
     # DAILY ENTRIES (Journal Entries)
@@ -331,3 +348,7 @@ class DataStorage:
             import traceback
             traceback.print_exc()
             return False
+    
+    def import_data(self, data: Dict):
+        """Import data (compatibility method for original code)."""
+        return self.import_all_data(data)

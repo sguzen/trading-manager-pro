@@ -176,9 +176,8 @@ class PsychologicalManager:
         existing_checkin = self.get_todays_checkin()
         
         if existing_checkin:
-            st.info(f"✅ Check-in already completed today at {existing_checkin.get('timestamp', 'unknown time')}")
-            if st.button("Update Today's Check-In"):
-                existing_checkin = None
+            st.success(f"✅ Check-in completed today at {existing_checkin.get('timestamp', 'unknown time')[:19]}")
+            st.info("💡 You can update your check-in by submitting the form again with new values.")
         
         st.markdown("**Complete this BEFORE opening any trading platform**")
         st.markdown("---")
@@ -269,7 +268,17 @@ class PsychologicalManager:
                 
                 if self.save_checkin(checkin_data):
                     st.success("✅ Check-in saved successfully!")
-                    st.rerun()
+                    
+                    # Show quick status preview
+                    clearance = self.get_trading_clearance()
+                    if clearance['status'] == 'GREEN':
+                        st.success(f"🟢 {clearance['message']}")
+                    elif clearance['status'] == 'YELLOW':
+                        st.warning(f"🟡 {clearance['message']}")
+                    elif clearance['status'] == 'RED':
+                        st.error(f"🔴 {clearance['message']}")
+                    
+                    st.info("💡 Go to '🚦 Status' in the sidebar to see full details.")
                 else:
                     st.error("❌ Error saving check-in")
     

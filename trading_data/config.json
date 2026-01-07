@@ -1,74 +1,42 @@
 [
   {
-    "default_view": "Overview",
+    "default_view": "Accounts",
     "show_clearance_banner": true,
-    "enforce_clearance": "Soft (Warning Only)",
+    "enforce_clearance": "Medium (Acknowledgment Required)",
     "track_overrides": true,
     "remind_checkin": true,
-    "end_of_day_summary": false,
-    "last_updated": "2026-01-07T12:07:32.463046",
-    "debt_amount": 12500.0,
+    "end_of_day_summary": true,
+    "last_updated": "2026-01-07T13:38:33.079806",
     "debt_name": "Trading Loan",
+    "debt_amount": 14000.0,
     "goal_amount": 1000000.0,
-    "grade_rules": [],
-    "grade_thresholds": {
-      "A": 100,
-      "B": 80,
-      "C": 60,
-      "F": 0
-    },
-    "position_sizing": {
-      "A": {
-        "contracts": 2,
-        "label": "Full Size"
-      },
-      "B": {
-        "contracts": 1,
-        "label": "Reduced"
-      },
-      "C": {
-        "contracts": 1,
-        "label": "Minimum"
-      },
-      "F": {
-        "contracts": 0,
-        "label": "NO TRADE"
-      }
-    },
     "must_have_rules": [
-      "HTF/Session lvl sweep"
+      "Daily bias",
+      "HTF/session sweep"
     ],
     "conditions": [
       {
-        "condition": "ltf csd",
+        "condition": "CSD",
         "unlocks": "C"
       },
       {
-        "condition": "reclaimed ifvg",
+        "condition": "IFVG reclaimed",
         "unlocks": "C"
       },
       {
-        "condition": "OB formed after csd",
+        "condition": "OB formed in OTE of the retracement",
         "unlocks": "B"
       },
       {
-        "condition": "return to OB formed after csd",
+        "condition": "CSD after OB",
         "unlocks": "B"
       },
       {
-        "condition": "OB formed at OTE",
+        "condition": "Setup forms in the q1",
         "unlocks": "A"
       },
       {
-        "condition": "return to OB formed at OTE",
-        "unlocks": "A"
-      },
-      {
-        "condition": "entry provided at macro",
-        "unlocks": "A"
-      },
-      {
-        "condition": "q3 inversion entry",
+        "condition": "Setup forms during macro",
         "unlocks": "A"
       }
     ]

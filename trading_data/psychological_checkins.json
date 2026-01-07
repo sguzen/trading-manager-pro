@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "sleep_hours": 7.0,
+    "exercise_done": true,
+    "alcohol_consumed": false,
+    "stress_level": 4,
+    "emotional_state": 5,
+    "home_stress": 6,
+    "trading_plan": "I am looking for shorts on gold and nasdaq. I will trade all accounts with focus on the funded Apex and Alpha. I have new Alpha eval and FN eval, want to treat them with caution, no need to hurry.",
+    "notes": "I already had a 6 green day streak and this is a bit concerning. Might have to slow down a bit, the inevitable red day is just around the corner and I dont want to turn it into a disaster",
+    "date": "2026-01-07",
+    "timestamp": "2026-01-07T13:04:58.044876"
+  }
+]
