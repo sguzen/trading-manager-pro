@@ -1,1 +1,41 @@
-[]
+[
+  {
+    "date": "2026-01-07",
+    "entry_time": "23:00:00",
+    "exit_time": "00:45:00",
+    "account": "Apex - $50,000 (Apex_1)",
+    "account_id": "Apex_1",
+    "playbook": "Main Setup",
+    "symbol": "MGC",
+    "direction": "Short",
+    "position_size": 13,
+    "entry_price": 4485.3,
+    "stop_loss": 4491.6,
+    "take_profit": 4451.7,
+    "pnl_gross": 747.38,
+    "pnl_net": 738.98,
+    "commission": 8.4,
+    "grade": "A",
+    "must_have_compliance": {
+      "must_0": true,
+      "must_1": true
+    },
+    "conditions_compliance": {
+      "cond_0": true,
+      "cond_1": false,
+      "cond_2": false,
+      "cond_3": false,
+      "cond_4": false,
+      "cond_5": true
+    },
+    "emotional_state": 4,
+    "would_repeat": true,
+    "followed_rules": true,
+    "screenshot_url": "https://www.tradingview.com/x/mdR3sjrt/",
+    "notes": "Amazing management and execution",
+    "was_planned": true,
+    "id": "trade_20260107_135750",
+    "timestamp": "2026-01-07T13:57:50.201301",
+    "updated_at": "2026-01-07T13:59:45.442991"
+  }
+]

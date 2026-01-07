@@ -12,7 +12,7 @@ class ConfigManager:
         firms = self.data_storage.load_prop_firms()
         
         # Add new firm
-        with st.expander("➕ Add New Prop Firm", expanded=not firms):
+        with st.expander("âž• Add New Prop Firm", expanded=not firms):
             with st.form("add_firm"):
                 col1, col2 = st.columns(2)
                 
@@ -50,7 +50,7 @@ class ConfigManager:
         if firms:
             st.write("### Existing Prop Firms")
             for i, firm in enumerate(firms):
-                with st.expander(f"📊 {firm.get('name', 'Unknown')}"):
+                with st.expander(f"ðŸ“Š {firm.get('name', 'Unknown')}"):
                     col1, col2, col3 = st.columns(3)
                     
                     with col1:
@@ -85,7 +85,7 @@ class ConfigManager:
             return
         
         # Add new account
-        with st.expander("➕ Add New Account", expanded=not accounts):
+        with st.expander("âž• Add New Account", expanded=not accounts):
             with st.form("add_account"):
                 col1, col2 = st.columns(2)
                 
@@ -140,8 +140,8 @@ class ConfigManager:
                                [a for a in accounts if a.get('status') == status_filter]
             
             for i, acc in enumerate(filtered_accounts):
-                status_emoji = {"evaluation": "📝", "funded": "💰", "blown": "💥", "inactive": "⏸️"}
-                emoji = status_emoji.get(acc.get('status', ''), "📊")
+                status_emoji = {"evaluation": "ðŸ“", "funded": "ðŸ’°", "blown": "ðŸ’¥", "inactive": "â¸ï¸"}
+                emoji = status_emoji.get(acc.get('status', ''), "ðŸ“Š")
                 
                 account_size = acc.get('account_size', 0)
                 current_balance = acc.get('current_balance', account_size)
@@ -194,7 +194,7 @@ class ConfigManager:
                             st.rerun()
                     
                     # Delete account
-                    if st.button(f"🗑️ Delete Account", key=f"del_acc_{i}"):
+                    if st.button(f"ðŸ—‘ï¸ Delete Account", key=f"del_acc_{i}"):
                         original_idx = accounts.index(acc)
                         accounts.pop(original_idx)
                         self.data_storage.save_accounts(accounts)
@@ -204,12 +204,12 @@ class ConfigManager:
     def manage_playbooks(self):
         st.subheader("Trading Playbooks")
         st.write("Define your proven setups with specific rules for each.")
-        st.info("💡 Tip: Use **Settings > Grade Rules** for your main setup's real-time grading checklist.")
+        st.info("ðŸ’¡ Tip: Use **Settings > Grade Rules** for your main setup's real-time grading checklist.")
         
         playbooks = self.data_storage.load_playbooks()
         
         # Add new playbook
-        with st.expander("➕ Add New Playbook", expanded=not playbooks):
+        with st.expander("âž• Add New Playbook", expanded=not playbooks):
             with st.form("add_playbook"):
                 playbook_name = st.text_input("Playbook Name", placeholder="e.g., Opening Range Breakout")
                 
@@ -264,7 +264,7 @@ class ConfigManager:
             st.write("### Your Playbooks")
             
             for i, pb in enumerate(playbooks):
-                with st.expander(f"📖 {pb.get('name', 'Unknown')}"):
+                with st.expander(f"ðŸ“– {pb.get('name', 'Unknown')}"):
                     col1, col2 = st.columns(2)
                     
                     with col1:
@@ -279,7 +279,7 @@ class ConfigManager:
                     if pb.get('rules'):
                         st.write("**Rules:**")
                         for rule in pb['rules']:
-                            st.write(f"  ✓ {rule}")
+                            st.write(f"  âœ“ {rule}")
                     
                     if pb.get('entry_criteria'):
                         st.write(f"**Entry:** {pb['entry_criteria']}")
@@ -307,7 +307,7 @@ class ConfigManager:
                             st.metric("Total P&L", f"${total_pnl:.2f}")
                     
                     # Delete playbook
-                    if st.button(f"🗑️ Delete Playbook", key=f"del_pb_{i}"):
+                    if st.button(f"ðŸ—‘ï¸ Delete Playbook", key=f"del_pb_{i}"):
                         playbooks.pop(i)
                         self.data_storage.save_playbooks(playbooks)
                         st.success("Playbook deleted!")
@@ -326,7 +326,7 @@ class ConfigManager:
             st.info("No funded accounts available for withdrawals.")
         else:
             # Add withdrawal
-            with st.expander("➕ Log New Withdrawal", expanded=not withdrawals):
+            with st.expander("âž• Log New Withdrawal", expanded=not withdrawals):
                 with st.form("add_withdrawal"):
                     col1, col2 = st.columns(2)
                     
@@ -364,7 +364,7 @@ class ConfigManager:
                     elif remaining < 0:
                         st.error(f"Over-allocated by ${abs(remaining):.2f}")
                     else:
-                        st.success("✓ Fully allocated")
+                        st.success("âœ“ Fully allocated")
                     
                     reinvest_details = st.text_input("Reinvestment Details", 
                                                     placeholder="e.g., New 100K eval from Tradeify")
@@ -394,7 +394,18 @@ class ConfigManager:
                                 "notes": notes
                             }
                             self.data_storage.add_withdrawal(withdrawal_data)
-                            st.success(f"Logged ${amount:.2f} withdrawal!")
+                            
+                            # Deduct from account balance
+                            all_accounts = self.data_storage.load_accounts()
+                            for i, acc in enumerate(all_accounts):
+                                if acc.get('account_number') == selected_acc.get('account_number'):
+                                    current_bal = acc.get('current_balance', acc.get('account_size', 0))
+                                    all_accounts[i]['current_balance'] = current_bal - amount
+                                    all_accounts[i]['updated_at'] = datetime.now().isoformat()
+                                    break
+                            self.data_storage.save_accounts(all_accounts)
+                            
+                            st.success(f"Logged ${amount:.2f} withdrawal! Account balance updated.")
                             st.rerun()
         
         # Display withdrawals
@@ -444,12 +455,12 @@ class ConfigManager:
             
             # Pending
             if pending > 0:
-                st.info(f"⏳ Pending: ${pending:,.2f}")
+                st.info(f"â³ Pending: ${pending:,.2f}")
             
             # Withdrawal list
             for i, w in enumerate(sorted(withdrawals, key=lambda x: x.get('date', ''), reverse=True)):
-                status_emoji = {"pending": "⏳", "approved": "✅", "paid": "💰", "rejected": "❌"}
-                emoji = status_emoji.get(w.get('status', ''), "📊")
+                status_emoji = {"pending": "â³", "approved": "âœ…", "paid": "ðŸ’°", "rejected": "âŒ"}
+                emoji = status_emoji.get(w.get('status', ''), "ðŸ“Š")
                 
                 with st.expander(f"{emoji} ${w.get('amount', 0):,.2f} - {w.get('prop_firm', 'Unknown')} ({w.get('date', 'N/A')})"):
                     col1, col2 = st.columns(2)
@@ -463,13 +474,13 @@ class ConfigManager:
                             st.write("**Allocations:**")
                             alloc = w['allocations']
                             if alloc.get('debt', 0) > 0:
-                                st.write(f"  • Debt: ${alloc['debt']:,.2f}")
+                                st.write(f"  â€¢ Debt: ${alloc['debt']:,.2f}")
                             if alloc.get('reinvestment', 0) > 0:
-                                st.write(f"  • Reinvest: ${alloc['reinvestment']:,.2f}")
+                                st.write(f"  â€¢ Reinvest: ${alloc['reinvestment']:,.2f}")
                             if alloc.get('savings', 0) > 0:
-                                st.write(f"  • Savings: ${alloc['savings']:,.2f}")
+                                st.write(f"  â€¢ Savings: ${alloc['savings']:,.2f}")
                             if alloc.get('personal', 0) > 0:
-                                st.write(f"  • Personal: ${alloc['personal']:,.2f}")
+                                st.write(f"  â€¢ Personal: ${alloc['personal']:,.2f}")
                         else:
                             st.write(f"**Allocation:** {w.get('allocation', 'N/A')}")
                     

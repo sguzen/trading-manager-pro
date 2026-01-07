@@ -114,6 +114,14 @@ class DataStorage:
         """Save prop firms configuration."""
         return self.save_data('prop_firms', firms)
     
+    def add_prop_firm(self, firm: Dict) -> bool:
+        """Add a new prop firm."""
+        firms = self.load_prop_firms()
+        firm['id'] = len(firms) + 1
+        firm['created_at'] = datetime.now().isoformat()
+        firms.append(firm)
+        return self.save_prop_firms(firms)
+    
     # ============================================
     # ACCOUNTS
     # ============================================
@@ -125,6 +133,15 @@ class DataStorage:
     def save_accounts(self, accounts: List[Dict]) -> bool:
         """Save trading accounts."""
         return self.save_data('accounts', accounts)
+    
+    def add_account(self, account: Dict) -> bool:
+        """Add a new trading account."""
+        accounts = self.load_accounts()
+        account['id'] = len(accounts) + 1
+        account['created_at'] = datetime.now().isoformat()
+        account['updated_at'] = datetime.now().isoformat()
+        accounts.append(account)
+        return self.save_accounts(accounts)
     
     def get_account_by_id(self, account_id: str) -> Dict:
         """Get a specific account by ID."""
@@ -152,6 +169,14 @@ class DataStorage:
     def save_playbooks(self, playbooks: List[Dict]) -> bool:
         """Save trading playbooks."""
         return self.save_data('playbooks', playbooks)
+    
+    def add_playbook(self, playbook: Dict) -> bool:
+        """Add a new playbook."""
+        playbooks = self.load_playbooks()
+        playbook['id'] = len(playbooks) + 1
+        playbook['created_at'] = datetime.now().isoformat()
+        playbooks.append(playbook)
+        return self.save_playbooks(playbooks)
     
     # ============================================
     # TRADES
