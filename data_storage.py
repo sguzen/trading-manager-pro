@@ -183,3 +183,87 @@ class DataStorage:
         """Get trades within a date range."""
         trades = self.load_trades()
         return [t for t in trades if start_date <= t.get('date', '') <= end_date]
+    
+    def load_settings(self) -> Dict:
+        """Load application settings."""
+        settings_data = self.load_data('config')
+        if settings_data and len(settings_data) > 0:
+            return settings_data[0]
+        return {}
+    
+    def save_settings(self, settings: Dict) -> bool:
+        """Save application settings."""
+        # Ensure all expected keys exist with defaults
+        default_settings = {
+            'default_view': 'Overview',
+            'show_clearance_banner': True,
+            'enforce_clearance': 'Soft (Warning Only)',
+            'track_overrides': True,
+            'remind_checkin': True,
+            'end_of_day_summary': False,
+            'last_updated': datetime.now().isoformat()
+        }
+        
+        # Merge with existing settings (preserve extra fields like grade_rules, etc.)
+        merged_settings = {**default_settings, **settings}
+        merged_settings['last_updated'] = datetime.now().isoformat()
+        
+        return self.save_data('config', [merged_settings])
+    
+    def load_daily_checkins(self) -> List[Dict]:
+        """Load daily check-ins (alias for psychological_checkins)."""
+        return self.load_psychological_checkins()
+    
+    def export_all_data(self) -> Dict[str, List[Dict]]:
+        """Export all data as a dictionary for backup/download."""
+        return {
+            'prop_firms': self.load_prop_firms(),
+            'accounts': self.load_accounts(),
+            'playbooks': self.load_playbooks(),
+            'trades': self.load_trades(),
+            'withdrawals': self.load_withdrawals(),
+            'psychological_checkins': self.load_psychological_checkins(),
+            'settings': [self.load_settings()],
+            'export_date': datetime.now().isoformat()
+        }
+    
+    def import_all_data(self, data: Dict[str, List[Dict]]) -> bool:
+        """Import data from a dictionary (from backup/upload)."""
+        try:
+            if 'prop_firms' in data:
+                self.save_prop_firms(data['prop_firms'])
+            
+            if 'accounts' in data:
+                self.save_accounts(data['accounts'])
+            
+            if 'playbooks' in data:
+                self.save_playbooks(data['playbooks'])
+            
+            if 'trades' in data:
+                self.save_trades(data['trades'])
+            
+            if 'withdrawals' in data:
+                self.save_withdrawals(data['withdrawals'])
+            
+            # Handle both old and new formats for psychological checkins
+            if 'psychological_checkins' in data:
+                self.save_psychological_checkins(data['psychological_checkins'])
+            elif 'daily_checkins' in data:
+                self.save_psychological_checkins(data['daily_checkins'])
+            
+            # Handle settings - can be dict or list
+            if 'settings' in data:
+                settings_data = data['settings']
+                # If it's a dict, wrap it in a list
+                if isinstance(settings_data, dict):
+                    self.save_settings(settings_data)
+                # If it's a list with items, take the first one
+                elif isinstance(settings_data, list) and len(settings_data) > 0:
+                    self.save_settings(settings_data[0])
+            
+            return True
+        except Exception as e:
+            print(f"Error importing data: {e}")
+            import traceback
+            traceback.print_exc()
+            return False

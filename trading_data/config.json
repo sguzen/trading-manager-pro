@@ -1,1 +1,76 @@
-[]
+[
+  {
+    "default_view": "Overview",
+    "show_clearance_banner": true,
+    "enforce_clearance": "Soft (Warning Only)",
+    "track_overrides": true,
+    "remind_checkin": true,
+    "end_of_day_summary": false,
+    "last_updated": "2026-01-07T12:07:32.463046",
+    "debt_amount": 12500.0,
+    "debt_name": "Trading Loan",
+    "goal_amount": 1000000.0,
+    "grade_rules": [],
+    "grade_thresholds": {
+      "A": 100,
+      "B": 80,
+      "C": 60,
+      "F": 0
+    },
+    "position_sizing": {
+      "A": {
+        "contracts": 2,
+        "label": "Full Size"
+      },
+      "B": {
+        "contracts": 1,
+        "label": "Reduced"
+      },
+      "C": {
+        "contracts": 1,
+        "label": "Minimum"
+      },
+      "F": {
+        "contracts": 0,
+        "label": "NO TRADE"
+      }
+    },
+    "must_have_rules": [
+      "HTF/Session lvl sweep"
+    ],
+    "conditions": [
+      {
+        "condition": "ltf csd",
+        "unlocks": "C"
+      },
+      {
+        "condition": "reclaimed ifvg",
+        "unlocks": "C"
+      },
+      {
+        "condition": "OB formed after csd",
+        "unlocks": "B"
+      },
+      {
+        "condition": "return to OB formed after csd",
+        "unlocks": "B"
+      },
+      {
+        "condition": "OB formed at OTE",
+        "unlocks": "A"
+      },
+      {
+        "condition": "return to OB formed at OTE",
+        "unlocks": "A"
+      },
+      {
+        "condition": "entry provided at macro",
+        "unlocks": "A"
+      },
+      {
+        "condition": "q3 inversion entry",
+        "unlocks": "A"
+      }
+    ]
+  }
+]
