@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "account": "AlphaFutures Zero - $50,000 (Alpha_1)",
+    "account_id": "Alpha_1",
+    "prop_firm": "AlphaFutures Zero",
+    "amount": 1035.0,
+    "date": "2026-01-06",
+    "status": "approved",
+    "allocations": {
+      "debt": 0.0,
+      "reinvestment": 90.0,
+      "savings": 0.0,
+      "personal": 945.0
+    },
+    "reinvest_details": "",
+    "notes": "90 for FN Bolt\n345 for Tradingview subs\n405 for Asya's exams",
+    "id": "withdrawal_20260107_125141",
+    "timestamp": "2026-01-07T12:51:41.785917"
+  }
+]

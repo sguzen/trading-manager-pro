@@ -20,7 +20,8 @@ class DataStorage:
             'playbooks': 'playbooks.json',
             'trades': 'trades.json',
             'withdrawals': 'withdrawals.json',
-            'psychological_checkins': 'psychological_checkins.json',  # NEW
+            'psychological_checkins': 'psychological_checkins.json',
+            'daily_entries': 'daily_entries.json',
             'config': 'config.json'
         }
         
@@ -101,7 +102,9 @@ class DataStorage:
             print(f"Error restoring backup: {e}")
             return False
     
-    # Convenience methods for specific data types
+    # ============================================
+    # PROP FIRMS
+    # ============================================
     
     def load_prop_firms(self) -> List[Dict]:
         """Load prop firms configuration."""
@@ -111,6 +114,10 @@ class DataStorage:
         """Save prop firms configuration."""
         return self.save_data('prop_firms', firms)
     
+    # ============================================
+    # ACCOUNTS
+    # ============================================
+    
     def load_accounts(self) -> List[Dict]:
         """Load trading accounts."""
         return self.load_data('accounts')
@@ -118,38 +125,6 @@ class DataStorage:
     def save_accounts(self, accounts: List[Dict]) -> bool:
         """Save trading accounts."""
         return self.save_data('accounts', accounts)
-    
-    def load_playbooks(self) -> List[Dict]:
-        """Load trading playbooks."""
-        return self.load_data('playbooks')
-    
-    def save_playbooks(self, playbooks: List[Dict]) -> bool:
-        """Save trading playbooks."""
-        return self.save_data('playbooks', playbooks)
-    
-    def load_trades(self) -> List[Dict]:
-        """Load trade journal entries."""
-        return self.load_data('trades')
-    
-    def save_trades(self, trades: List[Dict]) -> bool:
-        """Save trade journal entries."""
-        return self.save_data('trades', trades)
-    
-    def load_withdrawals(self) -> List[Dict]:
-        """Load withdrawal records."""
-        return self.load_data('withdrawals')
-    
-    def save_withdrawals(self, withdrawals: List[Dict]) -> bool:
-        """Save withdrawal records."""
-        return self.save_data('withdrawals', withdrawals)
-    
-    def load_psychological_checkins(self) -> List[Dict]:
-        """Load psychological check-in records."""
-        return self.load_data('psychological_checkins')
-    
-    def save_psychological_checkins(self, checkins: List[Dict]) -> bool:
-        """Save psychological check-in records."""
-        return self.save_data('psychological_checkins', checkins)
     
     def get_account_by_id(self, account_id: str) -> Dict:
         """Get a specific account by ID."""
@@ -165,6 +140,30 @@ class DataStorage:
                 account['last_updated'] = datetime.now().isoformat()
                 return self.save_accounts(accounts)
         return False
+    
+    # ============================================
+    # PLAYBOOKS
+    # ============================================
+    
+    def load_playbooks(self) -> List[Dict]:
+        """Load trading playbooks."""
+        return self.load_data('playbooks')
+    
+    def save_playbooks(self, playbooks: List[Dict]) -> bool:
+        """Save trading playbooks."""
+        return self.save_data('playbooks', playbooks)
+    
+    # ============================================
+    # TRADES
+    # ============================================
+    
+    def load_trades(self) -> List[Dict]:
+        """Load trade journal entries."""
+        return self.load_data('trades')
+    
+    def save_trades(self, trades: List[Dict]) -> bool:
+        """Save trade journal entries."""
+        return self.save_data('trades', trades)
     
     def add_trade(self, trade: Dict) -> bool:
         """Add a new trade to the journal."""
@@ -183,6 +182,66 @@ class DataStorage:
         """Get trades within a date range."""
         trades = self.load_trades()
         return [t for t in trades if start_date <= t.get('date', '') <= end_date]
+    
+    # ============================================
+    # WITHDRAWALS
+    # ============================================
+    
+    def load_withdrawals(self) -> List[Dict]:
+        """Load withdrawal records."""
+        return self.load_data('withdrawals')
+    
+    def save_withdrawals(self, withdrawals: List[Dict]) -> bool:
+        """Save withdrawal records."""
+        return self.save_data('withdrawals', withdrawals)
+    
+    def add_withdrawal(self, withdrawal: Dict) -> bool:
+        """Add a new withdrawal record."""
+        withdrawals = self.load_withdrawals()
+        withdrawal['id'] = f"withdrawal_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        withdrawal['timestamp'] = datetime.now().isoformat()
+        withdrawals.append(withdrawal)
+        return self.save_withdrawals(withdrawals)
+    
+    # ============================================
+    # PSYCHOLOGICAL CHECK-INS (Phase 1)
+    # ============================================
+    
+    def load_psychological_checkins(self) -> List[Dict]:
+        """Load psychological check-in records."""
+        return self.load_data('psychological_checkins')
+    
+    def save_psychological_checkins(self, checkins: List[Dict]) -> bool:
+        """Save psychological check-in records."""
+        return self.save_data('psychological_checkins', checkins)
+    
+    def load_daily_checkins(self) -> List[Dict]:
+        """Load daily check-ins (alias for psychological_checkins)."""
+        return self.load_psychological_checkins()
+    
+    # ============================================
+    # DAILY ENTRIES (Journal Entries)
+    # ============================================
+    
+    def load_daily_entries(self) -> List[Dict]:
+        """Load daily journal entries."""
+        return self.load_data('daily_entries')
+    
+    def save_daily_entries(self, entries: List[Dict]) -> bool:
+        """Save daily journal entries."""
+        return self.save_data('daily_entries', entries)
+    
+    def add_daily_entry(self, entry: Dict) -> bool:
+        """Add a new daily journal entry."""
+        entries = self.load_daily_entries()
+        entry['id'] = f"entry_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        entry['timestamp'] = datetime.now().isoformat()
+        entries.append(entry)
+        return self.save_daily_entries(entries)
+    
+    # ============================================
+    # SETTINGS
+    # ============================================
     
     def load_settings(self) -> Dict:
         """Load application settings."""
@@ -210,9 +269,9 @@ class DataStorage:
         
         return self.save_data('config', [merged_settings])
     
-    def load_daily_checkins(self) -> List[Dict]:
-        """Load daily check-ins (alias for psychological_checkins)."""
-        return self.load_psychological_checkins()
+    # ============================================
+    # IMPORT / EXPORT
+    # ============================================
     
     def export_all_data(self) -> Dict[str, List[Dict]]:
         """Export all data as a dictionary for backup/download."""
@@ -223,6 +282,7 @@ class DataStorage:
             'trades': self.load_trades(),
             'withdrawals': self.load_withdrawals(),
             'psychological_checkins': self.load_psychological_checkins(),
+            'daily_entries': self.load_daily_entries(),
             'settings': [self.load_settings()],
             'export_date': datetime.now().isoformat()
         }
@@ -251,10 +311,14 @@ class DataStorage:
             elif 'daily_checkins' in data:
                 self.save_psychological_checkins(data['daily_checkins'])
             
+            # Handle daily entries (journal entries)
+            if 'daily_entries' in data:
+                self.save_daily_entries(data['daily_entries'])
+            
             # Handle settings - can be dict or list
             if 'settings' in data:
                 settings_data = data['settings']
-                # If it's a dict, wrap it in a list
+                # If it's a dict, save it directly
                 if isinstance(settings_data, dict):
                     self.save_settings(settings_data)
                 # If it's a list with items, take the first one

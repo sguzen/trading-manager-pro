@@ -334,10 +334,11 @@ def show_settings():
                         st.write(f"• Prop Firms: **{len(import_data.get('prop_firms', []))}**")
                         st.write(f"• Accounts: **{len(import_data.get('accounts', []))}**")
                         st.write(f"• Playbooks: **{len(import_data.get('playbooks', []))}**")
-                    with col_b:
                         st.write(f"• Trades: **{len(import_data.get('trades', []))}**")
+                    with col_b:
                         st.write(f"• Withdrawals: **{len(import_data.get('withdrawals', []))}**")
                         st.write(f"• Check-ins: **{len(import_data.get('daily_checkins', []) or import_data.get('psychological_checkins', []))}**")
+                        st.write(f"• Journal Entries: **{len(import_data.get('daily_entries', []))}**")
                     
                     if 'settings' in import_data:
                         st.success("✓ Settings data included")
