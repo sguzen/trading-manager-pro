@@ -1,196 +1,185 @@
 import json
 import os
-from datetime import datetime, date
 from typing import Dict, List, Any
+from datetime import datetime
 
 class DataStorage:
+    """
+    Handles all data persistence for the Trading Manager Pro application.
+    Uses JSON files for simple, human-readable storage.
+    """
+    
     def __init__(self, data_dir: str = "trading_data"):
         self.data_dir = data_dir
-        self._ensure_data_dir()
+        self.ensure_data_directory()
+        
+        # Define all data files
+        self.data_files = {
+            'prop_firms': 'prop_firms.json',
+            'accounts': 'accounts.json',
+            'playbooks': 'playbooks.json',
+            'trades': 'trades.json',
+            'withdrawals': 'withdrawals.json',
+            'psychological_checkins': 'psychological_checkins.json',  # NEW
+            'config': 'config.json'
+        }
+        
+        self.ensure_data_files()
     
-    def _ensure_data_dir(self):
+    def ensure_data_directory(self):
+        """Create data directory if it doesn't exist."""
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
     
-    def _get_path(self, filename: str) -> str:
-        return os.path.join(self.data_dir, filename)
+    def ensure_data_files(self):
+        """Create empty data files if they don't exist."""
+        for data_type, filename in self.data_files.items():
+            filepath = os.path.join(self.data_dir, filename)
+            if not os.path.exists(filepath):
+                self.save_data(data_type, [])
     
-    def _load_json(self, filename: str) -> List[Dict]:
-        path = self._get_path(filename)
-        if os.path.exists(path):
-            try:
-                with open(path, 'r') as f:
-                    return json.load(f)
-            except json.JSONDecodeError:
-                return []
-        return []
+    def get_filepath(self, data_type: str) -> str:
+        """Get the full filepath for a data type."""
+        if data_type not in self.data_files:
+            raise ValueError(f"Unknown data type: {data_type}")
+        return os.path.join(self.data_dir, self.data_files[data_type])
     
-    def _save_json(self, filename: str, data: Any):
-        path = self._get_path(filename)
-        with open(path, 'w') as f:
-            json.dump(data, f, indent=2, default=str)
+    def load_data(self, data_type: str) -> List[Dict]:
+        """Load data from JSON file."""
+        filepath = self.get_filepath(data_type)
+        try:
+            with open(filepath, 'r') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return []
     
-    # Settings
-    def load_settings(self) -> Dict:
-        path = self._get_path("settings.json")
-        if os.path.exists(path):
-            try:
-                with open(path, 'r') as f:
-                    return json.load(f)
-            except json.JSONDecodeError:
-                return self._default_settings()
-        return self._default_settings()
+    def save_data(self, data_type: str, data: List[Dict]) -> bool:
+        """Save data to JSON file."""
+        filepath = self.get_filepath(data_type)
+        try:
+            with open(filepath, 'w') as f:
+                json.dump(data, f, indent=2, default=str)
+            return True
+        except Exception as e:
+            print(f"Error saving data: {e}")
+            return False
     
-    def _default_settings(self) -> Dict:
-        return {
-            "debt_amount": 5000.0,
-            "debt_name": "Trading Loan",
-            "goal_amount": 1000000.0,
-            "must_have_rules": [],  # Rules that ALL must be checked (or F-grade)
-            "bonus_rules": [],      # Rules that determine A/B/C grade
-            "grade_thresholds": {
-                "A": 80,   # % of bonus rules for A-grade
-                "B": 50,   # % of bonus rules for B-grade
-                "C": 0     # Below B = C-grade
-            },
-            "position_sizing": {
-                "A": {"drawdown_pct": 50, "label": "Full Size"},
-                "B": {"drawdown_pct": 30, "label": "Reduced"},
-                "C": {"drawdown_pct": 15, "label": "Minimum"},
-                "F": {"drawdown_pct": 0, "label": "NO TRADE"}
-            }
-        }
+    def backup_all_data(self, backup_dir: str = None) -> str:
+        """
+        Create a backup of all data files.
+        Returns the backup directory path.
+        """
+        if backup_dir is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_dir = os.path.join(self.data_dir, f"backup_{timestamp}")
+        
+        os.makedirs(backup_dir, exist_ok=True)
+        
+        for data_type, filename in self.data_files.items():
+            source = self.get_filepath(data_type)
+            dest = os.path.join(backup_dir, filename)
+            
+            if os.path.exists(source):
+                with open(source, 'r') as src_file:
+                    with open(dest, 'w') as dst_file:
+                        dst_file.write(src_file.read())
+        
+        return backup_dir
     
-    def save_settings(self, settings: Dict):
-        self._save_json("settings.json", settings)
+    def restore_from_backup(self, backup_dir: str) -> bool:
+        """Restore data from a backup directory."""
+        try:
+            for data_type, filename in self.data_files.items():
+                backup_file = os.path.join(backup_dir, filename)
+                if os.path.exists(backup_file):
+                    dest = self.get_filepath(data_type)
+                    with open(backup_file, 'r') as src:
+                        with open(dest, 'w') as dst:
+                            dst.write(src.read())
+            return True
+        except Exception as e:
+            print(f"Error restoring backup: {e}")
+            return False
     
-    # Prop Firms
+    # Convenience methods for specific data types
+    
     def load_prop_firms(self) -> List[Dict]:
-        return self._load_json("prop_firms.json")
+        """Load prop firms configuration."""
+        return self.load_data('prop_firms')
     
-    def save_prop_firms(self, firms: List[Dict]):
-        self._save_json("prop_firms.json", firms)
+    def save_prop_firms(self, firms: List[Dict]) -> bool:
+        """Save prop firms configuration."""
+        return self.save_data('prop_firms', firms)
     
-    def add_prop_firm(self, firm: Dict):
-        firms = self.load_prop_firms()
-        firm['id'] = len(firms) + 1
-        firm['created_at'] = datetime.now().isoformat()
-        firms.append(firm)
-        self.save_prop_firms(firms)
-        return firm
-    
-    # Accounts
     def load_accounts(self) -> List[Dict]:
-        return self._load_json("accounts.json")
+        """Load trading accounts."""
+        return self.load_data('accounts')
     
-    def save_accounts(self, accounts: List[Dict]):
-        self._save_json("accounts.json", accounts)
+    def save_accounts(self, accounts: List[Dict]) -> bool:
+        """Save trading accounts."""
+        return self.save_data('accounts', accounts)
     
-    def add_account(self, account: Dict):
-        accounts = self.load_accounts()
-        account['id'] = len(accounts) + 1
-        account['created_at'] = datetime.now().isoformat()
-        account['updated_at'] = datetime.now().isoformat()
-        accounts.append(account)
-        self.save_accounts(accounts)
-        return account
-    
-    # Playbooks
     def load_playbooks(self) -> List[Dict]:
-        return self._load_json("playbooks.json")
+        """Load trading playbooks."""
+        return self.load_data('playbooks')
     
-    def save_playbooks(self, playbooks: List[Dict]):
-        self._save_json("playbooks.json", playbooks)
+    def save_playbooks(self, playbooks: List[Dict]) -> bool:
+        """Save trading playbooks."""
+        return self.save_data('playbooks', playbooks)
     
-    def add_playbook(self, playbook: Dict):
-        playbooks = self.load_playbooks()
-        playbook['id'] = len(playbooks) + 1
-        playbook['created_at'] = datetime.now().isoformat()
-        playbooks.append(playbook)
-        self.save_playbooks(playbooks)
-        return playbook
-    
-    # Trades
     def load_trades(self) -> List[Dict]:
-        return self._load_json("trades.json")
+        """Load trade journal entries."""
+        return self.load_data('trades')
     
-    def save_trades(self, trades: List[Dict]):
-        self._save_json("trades.json", trades)
+    def save_trades(self, trades: List[Dict]) -> bool:
+        """Save trade journal entries."""
+        return self.save_data('trades', trades)
     
-    def add_trade(self, trade: Dict):
+    def load_withdrawals(self) -> List[Dict]:
+        """Load withdrawal records."""
+        return self.load_data('withdrawals')
+    
+    def save_withdrawals(self, withdrawals: List[Dict]) -> bool:
+        """Save withdrawal records."""
+        return self.save_data('withdrawals', withdrawals)
+    
+    def load_psychological_checkins(self) -> List[Dict]:
+        """Load psychological check-in records."""
+        return self.load_data('psychological_checkins')
+    
+    def save_psychological_checkins(self, checkins: List[Dict]) -> bool:
+        """Save psychological check-in records."""
+        return self.save_data('psychological_checkins', checkins)
+    
+    def get_account_by_id(self, account_id: str) -> Dict:
+        """Get a specific account by ID."""
+        accounts = self.load_accounts()
+        return next((acc for acc in accounts if acc.get('id') == account_id), None)
+    
+    def update_account_balance(self, account_id: str, new_balance: float) -> bool:
+        """Update the balance of a specific account."""
+        accounts = self.load_accounts()
+        for account in accounts:
+            if account.get('id') == account_id:
+                account['current_balance'] = new_balance
+                account['last_updated'] = datetime.now().isoformat()
+                return self.save_accounts(accounts)
+        return False
+    
+    def add_trade(self, trade: Dict) -> bool:
+        """Add a new trade to the journal."""
         trades = self.load_trades()
-        trade['id'] = len(trades) + 1
+        trade['id'] = f"trade_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         trade['timestamp'] = datetime.now().isoformat()
         trades.append(trade)
-        self.save_trades(trades)
-        return trade
+        return self.save_trades(trades)
     
-    # Withdrawals
-    def load_withdrawals(self) -> List[Dict]:
-        return self._load_json("withdrawals.json")
+    def get_trades_by_account(self, account_id: str) -> List[Dict]:
+        """Get all trades for a specific account."""
+        trades = self.load_trades()
+        return [t for t in trades if t.get('account_id') == account_id]
     
-    def save_withdrawals(self, withdrawals: List[Dict]):
-        self._save_json("withdrawals.json", withdrawals)
-    
-    def add_withdrawal(self, withdrawal: Dict):
-        withdrawals = self.load_withdrawals()
-        withdrawal['id'] = len(withdrawals) + 1
-        withdrawal['timestamp'] = datetime.now().isoformat()
-        withdrawals.append(withdrawal)
-        self.save_withdrawals(withdrawals)
-        return withdrawal
-    
-    # Daily Check-ins (old - kept for compatibility)
-    def load_daily_checkins(self) -> List[Dict]:
-        return self._load_json("daily_checkins.json")
-    
-    def save_daily_checkins(self, checkins: List[Dict]):
-        self._save_json("daily_checkins.json", checkins)
-    
-    def add_daily_checkin(self, checkin: Dict):
-        checkins = self.load_daily_checkins()
-        checkin['id'] = len(checkins) + 1
-        checkin['date'] = date.today().isoformat()
-        checkin['timestamp'] = datetime.now().isoformat()
-        checkins.append(checkin)
-        self.save_daily_checkins(checkins)
-        return checkin
-    
-    # Daily Entries (new - plan & review)
-    def load_daily_entries(self) -> List[Dict]:
-        return self._load_json("daily_entries.json")
-    
-    def save_daily_entries(self, entries: List[Dict]):
-        self._save_json("daily_entries.json", entries)
-    
-    # Export/Import
-    def export_all_data(self) -> Dict:
-        return {
-            "settings": self.load_settings(),
-            "prop_firms": self.load_prop_firms(),
-            "accounts": self.load_accounts(),
-            "playbooks": self.load_playbooks(),
-            "trades": self.load_trades(),
-            "withdrawals": self.load_withdrawals(),
-            "daily_checkins": self.load_daily_checkins(),
-            "daily_entries": self.load_daily_entries(),
-            "exported_at": datetime.now().isoformat()
-        }
-    
-    def import_data(self, data: Dict):
-        if "settings" in data:
-            self.save_settings(data["settings"])
-        if "prop_firms" in data:
-            self.save_prop_firms(data["prop_firms"])
-        if "accounts" in data:
-            self.save_accounts(data["accounts"])
-        if "playbooks" in data:
-            self.save_playbooks(data["playbooks"])
-        if "trades" in data:
-            self.save_trades(data["trades"])
-        if "withdrawals" in data:
-            self.save_withdrawals(data["withdrawals"])
-        if "daily_checkins" in data:
-            self.save_daily_checkins(data["daily_checkins"])
-        if "daily_entries" in data:
-            self.save_daily_entries(data["daily_entries"])
+    def get_trades_by_date_range(self, start_date: str, end_date: str) -> List[Dict]:
+        """Get trades within a date range."""
+        trades = self.load_trades()
+        return [t for t in trades if start_date <= t.get('date', '') <= end_date]
